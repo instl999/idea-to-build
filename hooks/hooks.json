@@ -1,0 +1,73 @@
+{
+  "description": "Load Idea-to-Build context and guard frozen core contracts.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/hooks/session_start.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\session_start.py\"",
+            "statusMessage": "Loading Idea-to-Build project context",
+            "additionalContextLimit": 5000,
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/hooks/user_prompt_submit.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\user_prompt_submit.py\"",
+            "additionalContextLimit": 5000,
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/hooks/pre_tool_use.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\pre_tool_use.py\"",
+            "statusMessage": "Checking frozen-core policy",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/hooks/post_tool_use.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\post_tool_use.py\"",
+            "statusMessage": "Verifying frozen-core hashes",
+            "additionalContextLimit": 3000,
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/hooks/stop_check.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\stop_check.py\"",
+            "statusMessage": "Checking Idea-to-Build completion gates",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

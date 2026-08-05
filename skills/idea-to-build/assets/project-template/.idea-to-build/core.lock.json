@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "template_only": true,
+  "status": "UNFROZEN",
+  "message": "init_project.py removes this marker. A final lock is created only after explicit human confirmation."
+}

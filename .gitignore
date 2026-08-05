@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.coverage
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+.venv/
+venv/
+.idea-to-build/guardrail.log
+.idea-to-build/last_test.json
