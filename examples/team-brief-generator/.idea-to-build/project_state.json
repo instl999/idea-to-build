@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "project_id": "1447978e-81af-4ef0-9f9e-58c0d34d4e92",
+  "project_name": "Team Brief Generator",
+  "current_phase": "CODEX_HANDOFF_READY",
+  "created_at": "2026-08-05T05:05:18Z",
+  "updated_at": "2026-08-05T05:05:19Z",
+  "user_language": "en",
+  "search_status": "COMPLETED",
+  "research_decision": "BUILD_CUSTOM",
+  "build_decision": "BUILD_CUSTOM",
+  "requirements_readiness": "READY",
+  "core_frozen": true,
+  "core_hash": "409bf7fe207f8da0d0e50eff1f0c2ff16b1eb70720b89cfdabd2e742281e7b73",
+  "core_confirmation": {
+    "confirmed": true,
+    "statement": "I confirm and freeze this worked example core",
+    "confirmed_at": "2026-08-05T05:05:19Z",
+    "actor": "human"
+  },
+  "unresolved_questions": [],
+  "accepted_assumptions": [],
+  "generated_documents": [
+    "codex/HANDOFF.md",
+    "codex/prompts/00-orchestrator-architecture-and-integratio.md",
+    "codex/prompts/01-input-and-parsing.md",
+    "codex/prompts/02-brief-generation.md",
+    "codex/prompts/03-export-and-persistence.md",
+    "codex/prompts/04-review-interface.md",
+    "codex/prompts/05-quality-engineering.md",
+    "codex/prompts/06-release-and-operations.md",
+    "docs/design/API_CONTRACT.md",
+    "docs/design/CODEX_ORCHESTRATION.md",
+    "docs/design/COMPONENT_ARCHITECTURE.md",
+    "docs/design/DATA_MODEL.md",
+    "docs/design/DEPLOYMENT_ROLLBACK.md",
+    "docs/design/ERROR_HANDLING.md",
+    "docs/design/EXTERNAL_DEPENDENCIES.md",
+    "docs/design/FEATURES.md",
+    "docs/design/MODULE_BOUNDARIES.md",
+    "docs/design/MVP_ROADMAP.md",
+    "docs/design/NON_FUNCTIONAL_REQUIREMENTS.md",
+    "docs/design/OBSERVABILITY.md",
+    "docs/design/PERMISSIONS.md",
+    "docs/design/PRODUCT_REQUIREMENTS.md",
+    "docs/design/REUSE_MATRIX.md",
+    "docs/design/RISK_REGISTER.md",
+    "docs/design/SECURITY_PRIVACY.md",
+    "docs/design/SYSTEM_CONTEXT.md",
+    "docs/design/TEST_STRATEGY.md",
+    "docs/design/USER_FLOWS.md",
+    "docs/design/USER_STORIES.md"
+  ],
+  "planned_codex_threads": 7,
+  "current_milestone": "Freeze the approved MVP contract",
+  "last_verified_commit": "3f20ff40af114f482e9275f26a5c934a930f2e87",
+  "workstreams": [
+    {
+      "name": "Input and parsing",
+      "goal": "Implement validated note ingestion and deterministic parsing",
+      "files": [
+        "src/intake"
+      ],
+      "tests": [
+        "npm test -- intake"
+      ]
+    },
+    {
+      "name": "Brief generation",
+      "goal": "Build traceable brief generation and editing state",
+      "files": [
+        "src/generation"
+      ],
+      "tests": [
+        "npm test -- generation"
+      ]
+    },
+    {
+      "name": "Export and persistence",
+      "goal": "Implement local persistence, deletion, and Markdown export",
+      "files": [
+        "src/export"
+      ],
+      "tests": [
+        "npm test -- export"
+      ]
+    },
+    {
+      "name": "Review interface",
+      "goal": "Build the accessible review workflow",
+      "files": [
+        "ui"
+      ],
+      "tests": [
+        "npm test -- ui"
+      ]
+    }
+  ],
+  "test_commands": []
+}

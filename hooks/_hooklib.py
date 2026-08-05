@@ -105,6 +105,7 @@ def forbidden_request(event, root):
     tool_name = str(event.get("tool_name", "")); tool_input = event.get("tool_input") or {}
     if not isinstance(tool_input, dict): tool_input = {"value": tool_input}
     command = str(tool_input.get("command", ""))
+    frozen = bool(load_runtime(root).load_state(root).get("core_frozen"))
     if re.search(r"(?i)(?:^|[\\/])freeze_core\.py\b", command): return "freeze_core.py is human-controlled and cannot be run by an AI tool call"
     if re.search(r"(?i)project_state\.py\s+confirm-core\b", command): return "core confirmation is human-controlled"
     if not command_is_mutating(tool_name, tool_input): return None
@@ -112,9 +113,13 @@ def forbidden_request(event, root):
     for leaf in string_leaves(tool_input):
         for token in candidate_tokens(leaf):
             relative = relative_if_inside(root, cwd, token)
-            if relative and is_protected(relative): return "protected path targeted: %s" % relative
+            if relative and is_protected(relative):
+                core_only = relative.startswith("docs/core/") or relative == ".idea-to-build/core.lock.json"
+                if frozen or not core_only: return "protected path targeted: %s" % relative
     normalized_command = command.replace("\\", "/").lower()
-    if re.search(r"(?:^|[\s'\"])(?:\.\./)*(?:docs/core|\.idea-to-build/core\.lock\.json|agents\.md|hooks/|\.codex/hooks/|scripts/(?:freeze_core|verify_core|idea_to_build_lib)\.py)", normalized_command):
+    always_pattern = r"(?:^|[\s'\"])(?:\.\./)*(?:agents\.md|hooks/|\.codex/hooks/|scripts/(?:freeze_core|verify_core|idea_to_build_lib)\.py)"
+    core_pattern = r"(?:^|[\s'\"])(?:\.\./)*(?:docs/core|\.idea-to-build/core\.lock\.json)"
+    if re.search(always_pattern, normalized_command) or (frozen and re.search(core_pattern, normalized_command)):
         return "a protected path is targeted by a mutating command"
     return None
 

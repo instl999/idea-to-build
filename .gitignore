@@ -10,3 +10,5 @@ build/
 venv/
 .idea-to-build/guardrail.log
 .idea-to-build/last_test.json
+.test-tmp/
+.e2e-tmp/

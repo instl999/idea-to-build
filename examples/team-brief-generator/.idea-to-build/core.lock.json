@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "frozen_at": "2026-08-05T05:05:19Z",
+  "confirmation": {
+    "confirmed": true,
+    "statement": "I confirm and freeze this worked example core",
+    "confirmed_at": "2026-08-05T05:05:19Z",
+    "actor": "human"
+  },
+  "normalization": "UTF-8 with CRLF and CR normalized to LF for hashing; source text is not rewritten",
+  "hash_algorithm": "SHA-256",
+  "files": [
+    {
+      "path": "docs/core/PROJECT_CHARTER.md",
+      "sha256": "b83bfafca6c3ad267e860ac7ac1b3930c6a7bacaf9f565b9a331f3ce31d9c8ba",
+      "bytes": 893
+    },
+    {
+      "path": "docs/core/PRODUCT_CONTRACT.md",
+      "sha256": "29359719aa1fe968f6fea8de77547f63a4668b983ea77af12b47c28a1a9473ce",
+      "bytes": 949
+    },
+    {
+      "path": "docs/core/ARCHITECTURE_CONTRACT.md",
+      "sha256": "4fadecf89b7def8d67a5177df37a234f0f54c3ab3c3c18784ecaefe79c6359c9",
+      "bytes": 952
+    },
+    {
+      "path": "docs/core/CONSTRAINTS.md",
+      "sha256": "f8f3185cf57157389ab869e5664989ce38bba5136de0f4b6b70b40a1c95a7d79",
+      "bytes": 682
+    },
+    {
+      "path": "docs/core/ACCEPTANCE_BASELINE.md",
+      "sha256": "04f63d029030ad84ea4b9e4d712c3e454626ebd2be7708dab7b722f007d53ac7",
+      "bytes": 984
+    }
+  ],
+  "core_hash": "409bf7fe207f8da0d0e50eff1f0c2ff16b1eb70720b89cfdabd2e742281e7b73"
+}

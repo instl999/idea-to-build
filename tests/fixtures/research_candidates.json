@@ -1,0 +1,7 @@
+{
+  "network_available": true,
+  "search_date": "2026-08-05",
+  "queries": ["example query", "示例检索词"],
+  "sources": ["https://example.invalid/official"],
+  "candidates": []
+}

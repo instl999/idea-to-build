@@ -1,0 +1,20 @@
+{
+  "positive": [
+    "I have an app idea and want to validate it before I build it.",
+    "Has this product idea already been built? Research it and help me develop it.",
+    "Turn this software idea into a buildable project.",
+    "Plan this product with Codex after requirements analysis.",
+    "我有一个应用想法，先搜索现成方案再开发。",
+    "帮我判断这个工具有没有人做过，并整理成可开发项目。",
+    "把这个软件需求做需求分析并交给 Codex 开发。"
+  ],
+  "negative": [
+    "Fix this bug in parser.py.",
+    "Explain this code to me.",
+    "Implement a small feature from this complete ticket.",
+    "Recommend some software for photo editing.",
+    "只修复这个 Bug。",
+    "解释这段代码。",
+    "随便聊聊创意，不需要验证或开发。"
+  ]
+}
