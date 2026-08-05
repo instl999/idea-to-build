@@ -13,6 +13,8 @@
   "core_frozen": false,
   "core_hash": null,
   "core_confirmation": null,
+  "codex_dispatch_status": "NOT_PLANNED",
+  "codex_dispatch_started_at": null,
   "unresolved_questions": [],
   "accepted_assumptions": [],
   "generated_documents": [],

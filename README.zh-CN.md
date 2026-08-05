@@ -2,9 +2,9 @@
 
 [English](README.md) | **简体中文**
 
-`idea-to-build` 是一个可安装的、由 Skill 与生命周期 Hooks 组成、且不包含 MCP server 的 Codex Plugin：先验证数字产品想法和当前替代方案，再把用户决定继续推进的想法收敛为可验收需求、受 SHA-256 保护的核心契约，以及可直接交给多个 Codex 任务/工作树的开发包。
+`idea-to-build` 是一个 Codex 专用、可安装、由 Skill 与生命周期 Hooks 组成且不包含 MCP server 的 Plugin：先验证数字产品想法和当前替代方案，再把用户决定继续推进的想法收敛为可验收需求、受 SHA-256 保护的核心契约，并按实际耦合度由 Codex 根智能体或原生子智能体/工作树完成开发。
 
-当前版本：`0.2.0`。本地运行时仅依赖 Python 3.9+ 标准库和 Git，不需要第三方 Python 包、API 密钥或插件自建网络服务；实时方案研究需要宿主提供的 Web Search 和网络访问。
+当前版本：`0.3.0`。本地运行时仅依赖 Python 3.9+ 标准库和 Git，不需要第三方 Python 包、API 密钥或插件自建网络服务；实时方案研究需要宿主提供的 Web Search 和网络访问。
 
 ## 它解决什么问题
 
@@ -21,7 +21,8 @@
 - 百分比不是就绪依据；P0 冲突、不可逆假设、隐私/安全/部署/验收缺失都会阻止冻结。
 - 冻结必须由人类显式确认并亲自运行命令。AI 不得确认、冻结、解锁或重冻。
 - 冻结后 `docs/core/**` 和 `.idea-to-build/core.lock.json` 永久只读于正常开发流程；变更进入 `docs/live/CHANGE_REQUESTS.md`。
-- 多任务开发先计算依赖图和文件所有权，再给出一个精确的任务数；同时进行的任务不得有路径重叠。
+- 先判断子智能体是否真的有价值：只有一个有效或高耦合工作流时由根智能体直接开发；存在两个以上互不重叠的独立工作流时，才生成子智能体提示词、依赖波次、分支、工作树和合并顺序。
+- 核心冻结后，用户要求继续开发即启动 Codex 运行期编排；只有计划确实建议时才使用原生子智能体，任何子任务提交都必须验证后才能合并。
 
 ## 官方规范基线
 
@@ -70,7 +71,7 @@ cd idea-to-build
 
 - Python 3.9 或更高版本；Windows 同时应能运行 `py -3`。
 - Git 可执行文件可用，并已配置提交身份。
-- 支持 Plugins 与 Hooks 的当前 ChatGPT/Codex 版本；组织策略可能限制安装或 hook 执行。
+- 支持 Plugins、Hooks、原生子智能体和 Git 工作树的当前 Codex Desktop/CLI；组织策略可能限制部分能力。
 
 这个仓库本身就是一个本地 marketplace 根目录：`.agents/plugins/marketplace.json` 中的 `source.path` 为 `./`，指向仓库根部的 plugin manifest。
 
@@ -82,7 +83,7 @@ codex plugin add idea-to-build@idea-to-build-local
 codex plugin list --json
 ```
 
-也可以在 ChatGPT 桌面端重启后打开 **Plugins**，选择 **Idea-to-Build Local** 来源并安装。更新插件时先 `git pull`，再移除并重新添加插件；版本或 Hook 哈希变化后重新审查信任，并在新任务中使用更新后的 Skill。若技能未出现，请重启宿主。
+也可以在 Codex Desktop 重启后打开 **Plugins**，选择 **Idea-to-Build Local** 来源并安装。更新插件时先 `git pull`，再移除并重新添加插件；版本或 Hook 哈希变化后重新审查信任，并在新任务中使用更新后的 Skill。若技能未出现，请重启宿主。
 
 ### Hook 信任与启用
 
@@ -102,7 +103,7 @@ codex plugin list --json
 $idea-to-build 我想做一个本地优先的工具，把会议记录转换成可追溯的团队简报。请先检索现成方案；若值得继续，再把它整理成可开发、可验收的 Codex 项目。
 ```
 
-在 ChatGPT Work 中，从技能选择器选择 Idea-to-Build（界面通常使用 `@` 选择）；在 Codex CLI/IDE 中输入 `$idea-to-build` 或从 `/skills` 选择。描述符合前置触发条件时也允许隐式调用。
+在 Codex Desktop/CLI 中输入 `$idea-to-build` 或从 `/skills` 选择；描述符合前置触发条件时也允许隐式调用。
 
 以下请求不应激活：窄范围 bug 修复、代码解释、已经定义清楚的小功能、普通软件推荐、无验证/开发意图的随意头脑风暴、非数字产品问题。
 
@@ -169,6 +170,26 @@ python scripts/verify_core.py --path .
 
 输出包括 21 份设计/质量/运维文档、`codex/HANDOFF.md` 和每个任务独立可理解的 `codex/prompts/*.md`。交接明确分支、工作树、文件所有权、依赖、启动/完成条件、测试和合并顺序。
 
+### 6. 按需指导实际开发
+
+`generate_handoff.py` 总会生成根智能体提示词和 `codex/dispatch.json`。它先合并所有权重叠的工作流，再选择执行方式：
+
+- `SINGLE_AGENT`：只有一个有效或高耦合工作流。直接在当前集成工作树中遵循 `codex/prompts/00-*.md`，不引入子智能体协调成本。
+- `SUBAGENTS`：存在两个以上互不重叠的独立工作流。交接文档会说明为什么值得并行，并为每项任务给出独立可读的提示词、文件所有权、依赖波次、分支、工作树、测试和合并顺序。
+
+核心冻结后，当用户要求 Codex 继续实际开发时，Skill 会直接执行该计划：`SINGLE_AGENT` 模式留在根任务中；`SUBAGENTS` 模式使用 Codex 原生协作工具，并由适配器准备和验证执行：
+
+```bash
+python scripts/codex_dispatch.py preview --path . --max-parallel 3
+python scripts/codex_dispatch.py start --path . --max-parallel 3
+python scripts/codex_dispatch.py materialize-wave --path . --wave 1 --base-commit <完整HEAD>
+python scripts/codex_dispatch.py verify-result --path . --task-id <任务ID> --commit <完整提交> --base-commit <完整波次基线>
+python scripts/codex_dispatch.py merge-result --path . --task-id <任务ID> --commit <完整提交> --base-commit <完整波次基线>
+python scripts/codex_dispatch.py retire-wave --path . --wave 1
+```
+
+Python 适配器负责门禁、Git 工作树、提示词 hash 绑定和结果验证；Skill 直接调用 Codex 原生 `spawn_agent`/`wait_agent`。生成提示词同时作为可审计记录和人工接管入口。本版本不定位或测试为 OpenClaw、通用 SkillHub、Claude Code 或跨宿主 Skill。
+
 ## Hooks 行为
 
 | 事件 | 行为 |
@@ -191,7 +212,7 @@ python -m compileall -q hooks skills/idea-to-build/scripts tests
 python skills/idea-to-build/scripts/validate_package.py --path .
 ```
 
-当前测试覆盖 65 个独立场景，包括：代表性的合法/非法状态迁移、旧 schema 迁移和新 schema 拒绝；联网/离线/冲突研究；38 类需求与就绪门禁；人类确认、换行规范化、hash 漂移；所有 5 类 hook；正反激活；重叠工作流合并；3-8 个任务规划；项目初始化、完整冻结、文档生成、交接与包校验。
+当前测试覆盖 79 个独立场景，包括：代表性的合法/非法状态迁移、旧 schema 迁移和新 schema 拒绝；联网/离线/冲突研究；38 类需求与就绪门禁；人类确认、换行规范化、hash 漂移；所有 5 类 hook；正反激活；重叠工作流合并；单根智能体与 3-8 个多任务规划；项目初始化、完整冻结、文档生成、交接与包校验。
 
 发布前还应运行已安装的官方校验器：
 
@@ -202,17 +223,11 @@ validate_plugin.py .
 
 完整冻结示例见 [`examples/team-brief-generator`](examples/team-brief-generator/README.md)。其研究候选是刻意虚构的测试夹具，不代表当前市场事实。
 
-## ChatGPT Work、桌面端与 CLI 兼容性
+## Codex 专用支持边界
 
-| 表面 | Skill/Plugin | 本地仓库与 hooks | 推荐用途 |
-|---|---|---|---|
-| ChatGPT Work Web | 可使用受支持的已安装 plugin/skill | 运行在托管环境，不能假设可访问本机项目、Git、只读位或本地 hook | 想法梳理、研究、协作式需求收集；本地冻结和开发交接转到桌面/Codex |
-| ChatGPT Work Desktop（本地） | 支持 Plugins Directory 与本地 marketplace | 可访问获准的本地文件；hook 是否生效取决于所选本地 Codex/Work 能力、组织策略和信任 | 安装、交互式研究、需求评审、人工冻结检查 |
-| Codex Desktop | 完整的本地 plugin/skill、Git、worktree 与 hook 流程 | 支持本地项目、审批、review、任务和工作树 | 推荐的端到端产品化与开发交接表面 |
-| Codex CLI | `codex plugin`、`$skill`/`/skills`、`/hooks` | 支持本地 Git、脚本、hooks 与工作树 | 可复现测试、自动化和工程团队使用 |
+本插件只面向 Codex Desktop 和 Codex CLI。端到端契约依赖 Codex Plugins、生命周期 Hooks、原生协作工具、本地 Git 和同级工作树。宿主版本、灰度、套餐、工作区策略、可用协作槽位和 Hook 信任都可能限制执行。
 
-独立 repo/user Skill 也可在 IDE 中发现，但本仓库的主要分发单元是 Plugin。具体可用性仍受版本、套餐、灰度和 workspace 管理策略影响。
-
+OpenClaw、通用 SkillHub 运行时、ChatGPT 托管 Web、Claude Code 和其他智能体宿主不在支持边界内。其他环境也许能读取 Markdown 提示词，但这不表示适配器可以安装、安全运行或保持相同行为。
 ## 卸载
 
 ```bash
@@ -255,7 +270,7 @@ codex plugin list --json
 
 ## 后续演进
 
-优先方向包括：增加 marketplace CI 和跨平台 hook 实机矩阵；为研究输入定义公开 JSON Schema；加入真实浏览搜索回放夹具；提供受审计的人类 change-request/unlock 工具；继续扩充 Git/tag 部分成功后的恢复指导；加入性能/可访问性报告适配器；发布到通用 Plugins Directory 后再提供稳定的安装/分享链接。
+优先方向包括：增加 marketplace CI 和跨平台 hook 实机矩阵；为研究输入定义公开 JSON Schema；加入真实浏览搜索回放夹具；提供受审计的人类 change-request/unlock 工具；继续扩充 Git/tag 部分成功后的恢复指导；加入性能/可访问性报告适配器；发布到 Codex Plugins Directory 后再提供稳定的安装/分享链接。
 
 ## 许可证
 

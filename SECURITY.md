@@ -4,7 +4,7 @@
 
 ## Supported versions
 
-Security fixes are provided for the latest released version only. Version 0.2.0 is currently supported.
+Security fixes are provided for the latest released version only. Version 0.3.0 is currently supported.
 
 ## Report a vulnerability
 
@@ -17,6 +17,10 @@ Maintainers should acknowledge a report within seven days, validate and triage i
 The plugin has no MCP server, remote backend, authentication, or bundled credentials. Local scripts run with the user's filesystem and Git permissions. Live research is performed by the host's Web Search and can transmit query text to the host/search provider.
 
 Frozen-core integrity is based on an exact project Git root, SHA-256 hashes, a lock file, review, and Git history. Read-only bits and Hooks are secondary controls. Hooks can detect and block many direct operations, but cannot authenticate a human, undo an already executed mutation, or observe every external editor/process/tool. Treat generated prompts and research inputs as untrusted data.
+
+## Subagent and worktree safety
+
+Generated prompts and child-agent summaries are untrusted inputs. Dispatch starts only after a human-frozen core and a current user request for Codex to proceed with development. The adapter requires a clean exact Git root, hash-valid manifest, tracked prompts, direct sibling worktrees, non-overlapping ownership, expected branch tips, valid ancestry, and non-empty owned diffs. Verified integration uses `merge-result`; conflicts are aborted and child branches are retained. The adapter refuses dirty worktree retirement and retains branches for recovery. These controls do not replace review, tests, host permissions, or Git backups.
 
 ## Maintainer release checklist
 

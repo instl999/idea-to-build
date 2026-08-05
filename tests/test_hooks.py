@@ -19,6 +19,16 @@ class HookTests(unittest.TestCase):
     def test_active_document_allowed(self):
         result = run_hook("pre_tool_use.py", self.event("Bash", "Set-Content docs/live/STATUS.md updated")); self.assertIsNone(result)
     def test_human_only_freeze_blocked(self): self.assert_blocked("Bash", "python scripts/freeze_core.py --path .")
+    def test_dispatch_adapter_is_protected(self):
+        self.assert_blocked("apply_patch", "*** Begin Patch\n*** Update File: scripts/codex_dispatch.py\n+x\n*** End Patch")
+    def test_protected_runtime_execution_is_allowed(self):
+        for command in (
+            "python scripts/verify_core.py --path .",
+            "python scripts/codex_dispatch.py preview --path .",
+            "python scripts/codex_dispatch.py merge-result --path . --task-id task-01-app --commit " + "a" * 40 + " --base-commit " + "b" * 40,
+        ):
+            with self.subTest(command=command):
+                self.assertIsNone(run_hook("pre_tool_use.py", self.event("Bash", command)))
     def test_context_injected_on_prompt(self):
         event = {"session_id": "s", "turn_id": "t", "cwd": str(self.fx.root), "hook_event_name": "UserPromptSubmit", "prompt": "continue", "permission_mode": "default"}
         result = run_hook("user_prompt_submit.py", event); context = result["hookSpecificOutput"]["additionalContext"]; self.assertIn("never modify docs/core", context); self.assertIn("Core status: VERIFIED", context)

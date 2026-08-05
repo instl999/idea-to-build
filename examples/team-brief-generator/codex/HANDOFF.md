@@ -1,8 +1,12 @@
 # Codex Development Handoff
 
-This project should use exactly **7 Codex threads**.
+Recommended Codex execution: **root agent plus 6 scoped tasks**.
 
+Subagents are recommended because independent non-overlapping workstreams exist.
 Frozen core hash: `409bf7fe207f8da0d0e50eff1f0c2ff16b1eb70720b89cfdabd2e742281e7b73`
+
+Codex activation policy: **start after freeze when the user asks to proceed with development**.
+Dispatch manifest: `codex/dispatch.json`.
 
 ## Merge sequence
 
@@ -14,8 +18,8 @@ Frozen core hash: `409bf7fe207f8da0d0e50eff1f0c2ff16b1eb70720b89cfdabd2e742281e7
 ## Thread 0 — Orchestrator, architecture, and integration
 
 - Goal: Maintain the ExecPlan, coordinate ownership, integrate branches, and resolve cross-module decisions
-- Branch: `codex/00-orchestrator-architecture-and-integratio`
-- Worktree: `../team-brief-generator-00-orchestrator-architecture-and-integratio`
+- Branch: `current integration branch`
+- Worktree: `.`
 - Writable ownership: `plans`, `docs/live/DECISIONS.md`, `docs/live/RISKS.md`
 - Inputs: AGENTS.md, frozen core, live status, risks, decisions, relevant ExecPlan
 - Outputs: scoped implementation or review evidence, a stable commit, and handoff summary

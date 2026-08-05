@@ -4,7 +4,9 @@
 
 ## Principle
 
-A frozen core is immutable in normal development. Version 0.2.0 intentionally has no unlock, rehash, or in-place refreeze command. Hooks, Skills, and AI tasks must not edit the lock/core or manufacture human approval. Updating a hash to match an unexplained change destroys the evidence and is never an acceptable repair.
+A frozen core is immutable in normal development. Version 0.3.0 intentionally has no unlock, rehash, or in-place refreeze command. Hooks, Skills, and AI tasks must not edit the lock/core or manufacture human approval. Updating a hash to match an unexplained change destroys the evidence and is never an acceptable repair.
+
+Root-agent versus subagent execution is a reversible Codex development choice and is deliberately excluded from the frozen product lock. Switching execution strategy does not require a core change while ownership, acceptance, architecture, privacy, security, and deployment contracts remain unchanged.
 
 ## Non-core changes
 

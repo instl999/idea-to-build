@@ -9,6 +9,8 @@ class StateMachineTests(unittest.TestCase):
         for key in ("schema_version", "project_id", "project_name", "current_phase", "created_at", "updated_at", "user_language", "search_status", "requirements_readiness", "core_frozen", "core_hash", "unresolved_questions", "accepted_assumptions", "generated_documents", "planned_codex_threads", "current_milestone", "last_verified_commit"):
             self.assertIn(key, state)
         self.assertEqual(state["current_phase"], "IDEA_RECEIVED")
+        self.assertEqual(state["codex_dispatch_status"], "NOT_PLANNED")
+        self.assertIsNone(state["codex_dispatch_started_at"])
     def test_supported_transition(self):
         state = itb.transition_state(self.fx.root, "SEARCH_REQUIRED", "Idea recorded")
         self.assertEqual(state["current_phase"], "SEARCH_REQUIRED")

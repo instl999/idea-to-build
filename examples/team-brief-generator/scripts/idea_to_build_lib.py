@@ -13,6 +13,9 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 SCHEMA_VERSION = 1
+CODEX_DISPATCH_ADAPTER = "codex-subagent-worktree-v1"
+CODEX_DISPATCH_STATUSES = {"NOT_PLANNED", "NOT_NEEDED", "READY", "ACTIVE", "COMPLETE"}
+CODEX_DISPATCH_MANIFEST = "codex/dispatch.json"
 PHASES = (
     "IDEA_RECEIVED", "SEARCH_REQUIRED", "SEARCH_IN_PROGRESS", "SOLUTION_FOUND",
     "BUILD_DECISION_REQUIRED", "REQUIREMENTS_GATHERING", "REQUIREMENTS_CONFLICT",
@@ -145,7 +148,7 @@ def ensure_supported_schema(payload, label):
 
 def state_defaults(project_name="Unconfirmed"):
     now = utc_now()
-    return {"schema_version": 1, "project_id": str(uuid.uuid4()), "project_name": project_name, "current_phase": "IDEA_RECEIVED", "created_at": now, "updated_at": now, "user_language": "en", "search_status": "NOT_STARTED", "research_decision": None, "build_decision": None, "requirements_readiness": "NOT_READY", "core_frozen": False, "core_hash": None, "core_confirmation": None, "unresolved_questions": [], "accepted_assumptions": [], "generated_documents": [], "planned_codex_threads": 0, "current_milestone": "Validate", "last_verified_commit": None, "workstreams": [], "test_commands": []}
+    return {"schema_version": 1, "project_id": str(uuid.uuid4()), "project_name": project_name, "current_phase": "IDEA_RECEIVED", "created_at": now, "updated_at": now, "user_language": "en", "search_status": "NOT_STARTED", "research_decision": None, "build_decision": None, "requirements_readiness": "NOT_READY", "core_frozen": False, "core_hash": None, "core_confirmation": None, "codex_dispatch_status": "NOT_PLANNED", "codex_dispatch_started_at": None, "unresolved_questions": [], "accepted_assumptions": [], "generated_documents": [], "planned_codex_threads": 0, "current_milestone": "Validate", "last_verified_commit": None, "workstreams": [], "test_commands": []}
 
 def migrate_state(payload):
     ensure_supported_schema(payload, "project state")
@@ -159,6 +162,8 @@ def migrate_state(payload):
     if result.get("research_decision") is not None and result.get("research_decision") not in RESEARCH_DECISIONS: raise IdeaToBuildError("Unknown research decision")
     if result.get("build_decision") is not None and result.get("build_decision") not in BUILDABLE_DECISIONS: raise IdeaToBuildError("Unknown build decision")
     if not isinstance(result.get("core_frozen"), bool): raise IdeaToBuildError("core_frozen must be boolean")
+    if result.get("codex_dispatch_status") not in CODEX_DISPATCH_STATUSES: raise IdeaToBuildError("Unknown Codex dispatch status")
+    if result.get("codex_dispatch_started_at") is not None and not isinstance(result.get("codex_dispatch_started_at"), str): raise IdeaToBuildError("codex_dispatch_started_at must be text or null")
     for key in ("unresolved_questions", "accepted_assumptions", "generated_documents", "workstreams", "test_commands"):
         if not isinstance(result.get(key), list): raise IdeaToBuildError("project state field %s must be a list" % key)
     result["schema_version"] = SCHEMA_VERSION
@@ -406,6 +411,7 @@ def git_commit_paths(root, paths, message):
     except subprocess.CalledProcessError as exc: raise IdeaToBuildError("Git command failed: %s" % (exc.stderr.strip() or exc.stdout.strip())) from exc
 
 def confirm_core(root, statement):
+
     normalized = " ".join(statement.strip().lower().split())
     negations = ("do not", "don't", "not confirm", "not approved", "unconfirmed", "不确认", "未确认", "不要冻结", "不冻结", "不同意")
     english = bool(re.fullmatch(r"(?:i |we )?(?:confirm(?: and)? freeze|approve(?:d)?(?::)? freeze|approve and freeze)(?: (?:this|the) core(?: preview| baseline)?)?", normalized))
@@ -417,6 +423,7 @@ def confirm_core(root, statement):
     if state["current_phase"] not in ("REQUIREMENTS_READY", "CORE_REVIEW"): raise IdeaToBuildError("Core confirmation is allowed only during REQUIREMENTS_READY or CORE_REVIEW")
     state["current_phase"] = "CORE_REVIEW"
     state["core_confirmation"] = {"confirmed": True, "statement": statement.strip(), "confirmed_at": utc_now(), "actor": "human"}
+    state["codex_dispatch_status"] = "NOT_PLANNED"
     save_state(root, state); return state
 
 def freeze_core(root, commit=True, tag=None, readonly=True):
@@ -529,7 +536,7 @@ def normalize_owner_path(value):
     value = re.sub(r"/+", "/", value).rstrip("/"); value = re.sub(r"/\*\*?$", "", value)
     parsed = PurePosixPath(value)
     if value == "." or not value or parsed.is_absolute() or value.startswith("//") or ".." in parsed.parts or any(":" in part for part in parsed.parts): raise IdeaToBuildError("Invalid ownership path: %s" % value)
-    protected = (".git", ".idea-to-build", ".codex", "agents.md", "hooks", "scripts/idea_to_build_lib.py", "scripts/freeze_core.py", "scripts/verify_core.py")
+    protected = (".git", ".idea-to-build", ".codex", "agents.md", "hooks", "scripts/idea_to_build_lib.py", "scripts/freeze_core.py", "scripts/verify_core.py", "scripts/codex_dispatch.py")
     lowered = value.lower()
     if any(lowered == item or lowered.startswith(item + "/") for item in protected) or lowered == "docs/core" or lowered.startswith("docs/core/"):
         raise IdeaToBuildError("A workstream cannot own protected paths: %s" % value)
@@ -640,20 +647,371 @@ def plan_threads(root, workstreams=None):
     raw = list(workstreams if workstreams is not None else state.get("workstreams", []))
     if not raw: raw = [{"name": "Product implementation", "goal": "Implement the MVP", "files": ["src"], "tests": project_tests}]
     development = merge_overlapping_workstreams(raw)
-    threads = [{"number": 0, "name": "Orchestrator, architecture, and integration", "goal": "Maintain the ExecPlan, coordinate ownership, integrate branches, and resolve cross-module decisions", "files": ["plans", "docs/live/DECISIONS.md", "docs/live/RISKS.md"], "dependencies": [], "tests": ["python scripts/verify_core.py --path ."], "merge_order": 0}]
+    project_slug = slugify(state["project_name"])
+
+    if len(development) == 1:
+        stream = development[0]
+        files = list(dict.fromkeys(stream["files"] + ["plans", "docs/live/DECISIONS.md", "docs/live/RISKS.md", "docs/live/STATUS.md", "docs/live/RELEASES.md"]))
+        return [{
+            "number": 0,
+            "name": "Single-agent implementation and integration",
+            "goal": "%s; integrate, test, document, and prepare release evidence without subagent overhead" % stream["goal"],
+            "files": files,
+            "dependencies": [],
+            "tests": list(dict.fromkeys(stream.get("tests", []) + project_tests + ["python scripts/verify_core.py --path ."])),
+            "merge_order": 0,
+            "branch": "current integration branch",
+            "worktree": ".",
+        }]
+
+    threads = [{"number": 0, "name": "Orchestrator, architecture, and integration", "goal": "Maintain the ExecPlan, coordinate ownership, integrate branches, and resolve cross-module decisions", "files": ["plans", "docs/live/DECISIONS.md", "docs/live/RISKS.md"], "dependencies": [], "tests": ["python scripts/verify_core.py --path ."], "merge_order": 0, "branch": "current integration branch", "worktree": "."}]
     for index, stream in enumerate(development, start=1):
         thread = dict(stream); thread.update({"number": index, "merge_order": index}); threads.append(thread)
     quality_number = len(threads)
-    if len(development) == 1:
-        threads.append({"number": quality_number, "name": "Quality and release", "goal": "Validate tests, security, performance, regression, documentation, release, and rollback", "files": ["tests", "docs/live/STATUS.md", "docs/live/RELEASES.md"], "dependencies": [development[0]["name"]], "tests": list(dict.fromkeys(project_tests + ["python scripts/verify_core.py --path ."])), "merge_order": quality_number})
-    else:
-        threads.append({"number": quality_number, "name": "Quality engineering", "goal": "Report test, integration, security, performance, regression, and core-consistency findings", "files": ["tests", "quality"], "dependencies": [item["name"] for item in development], "tests": list(dict.fromkeys(project_tests + ["python scripts/verify_core.py --path ."])), "merge_order": quality_number})
-        release_number = quality_number + 1
-        threads.append({"number": release_number, "name": "Release and operations", "goal": "Complete release checks, documentation, migration, deployment, rollback, and release records", "files": ["docs/live/STATUS.md", "docs/live/RELEASES.md", "deploy"], "dependencies": ["Quality engineering"], "tests": ["python scripts/verify_core.py --path ."], "merge_order": release_number})
-    project_slug = slugify(state["project_name"])
-    for thread in threads:
+    threads.append({"number": quality_number, "name": "Quality engineering", "goal": "Report test, integration, security, performance, regression, and core-consistency findings", "files": ["tests", "quality"], "dependencies": [item["name"] for item in development], "tests": list(dict.fromkeys(project_tests + ["python scripts/verify_core.py --path ."])), "merge_order": quality_number})
+    release_number = quality_number + 1
+    threads.append({"number": release_number, "name": "Release and operations", "goal": "Complete release checks, documentation, migration, deployment, rollback, and release records", "files": ["docs/live/STATUS.md", "docs/live/RELEASES.md", "deploy"], "dependencies": ["Quality engineering"], "tests": ["python scripts/verify_core.py --path ."], "merge_order": release_number})
+    for thread in threads[1:]:
         slug = slugify(thread["name"]); thread["branch"] = "codex/%02d-%s" % (thread["number"], slug); thread["worktree"] = "../%s-%02d-%s" % (project_slug, thread["number"], slug)
     return threads
+def _json_digest(payload):
+    material = dict(payload); material.pop("manifest_sha256", None)
+    encoded = json.dumps(material, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _file_sha256(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _agent_task_name(number, name):
+    suffix = slugify(name).replace("-", "_")[:44] or "workstream"
+    return "task_%02d_%s" % (number, suffix)
+
+
+def _dependency_waves(tasks):
+    task_ids = {task["id"] for task in tasks}
+    if len(task_ids) != len(tasks): raise IdeaToBuildError("Codex dispatch task ids must be unique")
+    remaining, completed, waves = {task["id"]: task for task in tasks}, set(), []
+    while remaining:
+        ready = [task for task in remaining.values() if set(task.get("dependencies", [])) <= completed]
+        ready.sort(key=lambda item: (item.get("merge_order", 0), item["id"]))
+        if not ready:
+            unresolved = ", ".join(sorted(remaining))
+            raise IdeaToBuildError("Codex dispatch dependency graph is cyclic or unresolved: %s" % unresolved)
+        wave_ids = [task["id"] for task in ready]
+        waves.append({"number": len(waves) + 1, "task_ids": wave_ids})
+        completed.update(wave_ids)
+        for task_id in wave_ids: del remaining[task_id]
+    return waves
+
+
+def _build_codex_dispatch_manifest(root, state, threads, prompt_paths):
+    base = project_root(root)
+    lock = ensure_supported_schema(load_json(safe_project_path(base, ".idea-to-build/core.lock.json")), "core lock")
+    confirmation = lock.get("confirmation") if isinstance(lock.get("confirmation"), dict) else {}
+    prompt_by_number = {thread["number"]: prompt_paths[index] for index, thread in enumerate(threads)}
+    orchestrator = threads[0]
+    name_to_id = {}
+    for thread in threads[1:]:
+        key = thread["name"].casefold()
+        if key in name_to_id: raise IdeaToBuildError("Codex thread names must be unique: %s" % thread["name"])
+        name_to_id[key] = "task-%02d-%s" % (thread["number"], slugify(thread["name"]))
+    tasks = []
+    for thread in threads[1:]:
+        dependencies = []
+        for dependency in thread.get("dependencies", []):
+            if dependency.casefold() == orchestrator["name"].casefold():
+                continue
+            task_id = name_to_id.get(dependency.casefold())
+            if not task_id: raise IdeaToBuildError("Unknown Codex thread dependency %s for %s" % (dependency, thread["name"]))
+            if task_id not in dependencies: dependencies.append(task_id)
+        task_id = name_to_id[thread["name"].casefold()]
+        if task_id in dependencies: raise IdeaToBuildError("Codex thread cannot depend on itself: %s" % thread["name"])
+        tasks.append({
+            "id": task_id, "number": thread["number"], "task_name": _agent_task_name(thread["number"], thread["name"]),
+            "name": thread["name"], "goal": thread["goal"], "prompt": prompt_by_number[thread["number"]],
+            "prompt_sha256": _file_sha256(safe_project_path(base, prompt_by_number[thread["number"]])),
+            "branch": thread["branch"], "worktree": thread["worktree"], "ownership": thread["files"],
+            "dependencies": dependencies, "tests": thread.get("tests", []), "merge_order": thread["merge_order"],
+        })
+    waves = _dependency_waves(tasks)
+    manifest = {
+        "schema_version": 1, "adapter": CODEX_DISPATCH_ADAPTER, "created_at": utc_now(),
+        "project_id": state["project_id"], "project_name": state["project_name"], "core_hash": state.get("core_hash"),
+        "activation_policy": "Start only after core freeze when the user asks Codex to proceed with development.",
+        "authorization": {"actor": confirmation.get("actor"), "confirmed_at": confirmation.get("confirmed_at")},
+        "orchestrator": {"number": orchestrator["number"], "name": orchestrator["name"], "prompt": prompt_by_number[orchestrator["number"]], "prompt_sha256": _file_sha256(safe_project_path(base, prompt_by_number[orchestrator["number"]])), "ownership": orchestrator["files"]},
+        "orchestration_mode": "SUBAGENTS" if tasks else "SINGLE_AGENT",
+        "subagents_recommended": bool(tasks),
+        "recommendation_reason": "Independent non-overlapping workstreams justify isolated subagents." if tasks else "One effective workstream is better handled by the root agent without subagent overhead.",
+        "required_host_tools": ["spawn_agent", "wait_agent"] if tasks else [],
+        "optional_host_tools": ["send_message", "followup_task", "interrupt_agent", "list_agents"] if tasks else [],
+        "required_local_capabilities": ["git", "git_worktree"] if tasks else ["git"],
+        "recommended_max_parallel": max(1, min(3, max((len(wave["task_ids"]) for wave in waves), default=1))) if tasks else 0,
+        "tasks": tasks, "waves": waves,
+    }
+    manifest["manifest_sha256"] = _json_digest(manifest)
+    return manifest
+
+
+def load_codex_dispatch(root):
+    base = project_root(root)
+    manifest = ensure_supported_schema(load_json(safe_project_path(base, CODEX_DISPATCH_MANIFEST)), "Codex dispatch manifest")
+    if manifest.get("adapter") != CODEX_DISPATCH_ADAPTER: raise IdeaToBuildError("Unsupported Codex dispatch adapter")
+    if manifest.get("manifest_sha256") != _json_digest(manifest): raise IdeaToBuildError("Codex dispatch manifest hash mismatch")
+    state = load_state(base)
+    if manifest.get("project_id") != state.get("project_id"): raise IdeaToBuildError("Codex dispatch project id mismatch")
+    if manifest.get("core_hash") != state.get("core_hash"): raise IdeaToBuildError("Codex dispatch core hash mismatch")
+    expected_required = ["spawn_agent", "wait_agent"] if manifest.get("subagents_recommended") is True else []
+    expected_optional = ["send_message", "followup_task", "interrupt_agent", "list_agents"] if manifest.get("subagents_recommended") is True else []
+    expected_local = ["git", "git_worktree"] if manifest.get("subagents_recommended") is True else ["git"]
+    if manifest.get("required_host_tools") != expected_required or manifest.get("optional_host_tools") != expected_optional or manifest.get("required_local_capabilities") != expected_local:
+        raise IdeaToBuildError("Codex dispatch capability contract mismatch")
+    orchestrator = manifest.get("orchestrator")
+    if not isinstance(orchestrator, dict): raise IdeaToBuildError("Codex dispatch orchestrator must be an object")
+    orchestrator_prompt = safe_project_path(base, validate_single_line("Codex orchestrator prompt", orchestrator.get("prompt"), 500))
+    orchestrator_hash = orchestrator.get("prompt_sha256")
+    if not isinstance(orchestrator_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", orchestrator_hash): raise IdeaToBuildError("Invalid Codex orchestrator prompt hash")
+    if not orchestrator_prompt.is_file() or _file_sha256(orchestrator_prompt) != orchestrator_hash: raise IdeaToBuildError("Codex orchestrator prompt hash mismatch")
+    tasks = manifest.get("tasks")
+    if not isinstance(tasks, list): raise IdeaToBuildError("Codex dispatch tasks must be an array")
+    mode = manifest.get("orchestration_mode")
+    if mode not in ("SINGLE_AGENT", "SUBAGENTS"): raise IdeaToBuildError("Unknown Codex orchestration mode")
+    if mode == "SINGLE_AGENT" and (tasks or manifest.get("subagents_recommended") is not False): raise IdeaToBuildError("Single-agent manifest cannot contain subagent tasks")
+    if mode == "SUBAGENTS" and (not tasks or manifest.get("subagents_recommended") is not True): raise IdeaToBuildError("Subagent manifest must contain recommended tasks")
+    seen_names = set()
+    for task in tasks:
+        if not isinstance(task, dict): raise IdeaToBuildError("Every Codex dispatch task must be an object")
+        for key in ("id", "task_name", "name", "goal", "prompt", "branch", "worktree"):
+            validate_single_line("Codex dispatch %s" % key, task.get(key), 500)
+        if not re.fullmatch(r"task-[0-9]{2}-[a-z0-9-]{1,80}", task["id"]): raise IdeaToBuildError("Invalid Codex dispatch task id: %s" % task["id"])
+        if not re.fullmatch(r"[a-z0-9_]{1,64}", task["task_name"]): raise IdeaToBuildError("Invalid Codex subagent task name: %s" % task["task_name"])
+        if not re.fullmatch(r"codex/[0-9]{2}-[a-z0-9-]{1,80}", task["branch"]): raise IdeaToBuildError("Invalid Codex task branch: %s" % task["branch"])
+        if task["task_name"] in seen_names: raise IdeaToBuildError("Duplicate Codex subagent task name: %s" % task["task_name"])
+        seen_names.add(task["task_name"])
+        if not isinstance(task.get("ownership"), list) or not task["ownership"]: raise IdeaToBuildError("Codex dispatch task has no ownership: %s" % task["id"])
+        task["ownership"] = [normalize_owner_path(value) for value in task["ownership"]]
+        if not isinstance(task.get("dependencies"), list): raise IdeaToBuildError("Codex dispatch dependencies must be an array")
+        for dependency in task["dependencies"]:
+            if not isinstance(dependency, str) or not re.fullmatch(r"task-[0-9]{2}-[a-z0-9-]{1,80}", dependency): raise IdeaToBuildError("Invalid Codex task dependency")
+        prompt = safe_project_path(base, task["prompt"])
+        prompt_hash = task.get("prompt_sha256")
+        if not isinstance(prompt_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", prompt_hash): raise IdeaToBuildError("Invalid Codex task prompt hash")
+        if not prompt.is_file(): raise IdeaToBuildError("Codex dispatch prompt is missing: %s" % task["prompt"])
+        if _file_sha256(prompt) != prompt_hash: raise IdeaToBuildError("Codex dispatch prompt hash mismatch: %s" % task["prompt"])
+    expected_waves = _dependency_waves(tasks)
+    if manifest.get("waves") != expected_waves: raise IdeaToBuildError("Codex dispatch waves do not match the dependency graph")
+    return manifest
+
+
+def _planned_worktree_path(root, relative):
+    base = project_root(root)
+    raw = validate_single_line("Codex worktree path", relative, 300).replace("\\", "/")
+    parsed = PurePosixPath(raw)
+    if len(parsed.parts) != 2 or parsed.parts[0] != ".." or parsed.parts[1] in ("", ".", ".."):
+        raise IdeaToBuildError("Codex worktrees must be direct siblings of the project: %s" % raw)
+    target = base.parent / parsed.parts[1]
+    try: target.resolve(strict=False).relative_to(base.parent.resolve())
+    except (OSError, ValueError) as exc: raise IdeaToBuildError("Codex worktree escapes the project parent: %s" % raw) from exc
+    if target.resolve(strict=False) == base: raise IdeaToBuildError("Codex worktree cannot replace the project root")
+    is_junction = getattr(target, "is_junction", lambda: False)
+    if target.is_symlink() or is_junction(): raise IdeaToBuildError("Codex worktree target cannot be a link or junction: %s" % target)
+    return target
+
+
+def _dispatch_dirty_paths(root):
+    result = _run_git(root, ["status", "--porcelain", "--untracked-files=all"], check=False)
+    if result.returncode != 0: raise IdeaToBuildError("Git status failed: %s" % result.stderr.strip())
+    transient = {".idea-to-build/last_test.json", ".idea-to-build/guardrail.log"}
+    paths = []
+    for line in result.stdout.splitlines():
+        raw = line[3:] if len(line) > 3 else line
+        if " -> " in raw: raw = raw.split(" -> ", 1)[1]
+        normalized = raw.strip('"').replace("\\", "/")
+        if normalized not in transient: paths.append(normalized)
+    return paths
+
+
+def _dispatch_gate(root, require_active=False):
+    base = ensure_exact_git_root(root); state = load_state(base)
+    allowed = ("DEVELOPMENT_ACTIVE",) if require_active else ("CODEX_HANDOFF_READY", "DEVELOPMENT_ACTIVE")
+    if state.get("current_phase") not in allowed: raise IdeaToBuildError("Codex dispatch requires phase %s" % " or ".join(allowed))
+    lock = ensure_supported_schema(load_json(safe_project_path(base, ".idea-to-build/core.lock.json")), "core lock")
+    confirmation = lock.get("confirmation") if isinstance(lock.get("confirmation"), dict) else {}
+    if not confirmation.get("confirmed") or confirmation.get("actor") != "human": raise IdeaToBuildError("Codex dispatch requires an explicit human core confirmation")
+
+    if state.get("core_confirmation") != confirmation: raise IdeaToBuildError("Project state and frozen core confirmation differ")
+    verified = verify_core(base)
+    if not verified["ok"]: raise IdeaToBuildError("Core verification failed: %s" % "; ".join(verified["mismatches"]))
+    manifest = load_codex_dispatch(base)
+    if manifest.get("subagents_recommended") is not True: raise IdeaToBuildError("Subagents are not recommended for this single-workstream plan; use the root prompt directly")
+
+    dirty = _dispatch_dirty_paths(base)
+    if dirty: raise IdeaToBuildError("Codex dispatch requires a clean integration worktree: %s" % ", ".join(dirty[:20]))
+    managed = [CODEX_DISPATCH_MANIFEST, "codex/HANDOFF.md"] + [task["prompt"] for task in manifest["tasks"]] + [manifest["orchestrator"]["prompt"]]
+    missing = []
+    for relative in managed:
+        if _run_git(base, ["ls-files", "--error-unmatch", "--", relative], check=False).returncode != 0: missing.append(relative)
+    if missing: raise IdeaToBuildError("Commit the generated Codex dispatch package before starting: %s" % ", ".join(missing))
+    expected_status = "ACTIVE" if state["current_phase"] == "DEVELOPMENT_ACTIVE" else "READY"
+    if state.get("codex_dispatch_status") != expected_status: raise IdeaToBuildError("Codex dispatch state is inconsistent with the project phase")
+    head = _run_git(base, ["rev-parse", "HEAD"], check=False)
+    if head.returncode != 0 or not head.stdout.strip(): raise IdeaToBuildError("Codex dispatch requires a committed Git HEAD")
+    return base, state, manifest, head.stdout.strip()
+
+
+def preview_codex_dispatch(root, max_parallel=3, require_active=False):
+    if not isinstance(max_parallel, int) or max_parallel < 1 or max_parallel > 8: raise IdeaToBuildError("max_parallel must be an integer from 1 to 8")
+    base, state, manifest, head = _dispatch_gate(root, require_active=require_active)
+    tasks = []
+    for task in manifest["tasks"]:
+        target = _planned_worktree_path(base, task["worktree"])
+        item = dict(task); item["absolute_worktree"] = str(target)
+        item["spawn_prompt"] = "Work only in %s. Open and follow %s. Commit the completed scoped work and return the commit hash, tests, summary, and remaining risks." % (target, target / Path(task["prompt"]))
+        tasks.append(item)
+    return {"schema_version": 1, "ok": True, "status": "ACTIVE" if state["current_phase"] == "DEVELOPMENT_ACTIVE" else "READY", "adapter": CODEX_DISPATCH_ADAPTER, "base_commit": head, "core_hash": manifest["core_hash"], "manifest_sha256": manifest["manifest_sha256"], "max_parallel": min(max_parallel, manifest["recommended_max_parallel"]), "required_host_tools": manifest["required_host_tools"], "optional_host_tools": manifest["optional_host_tools"], "required_local_capabilities": manifest["required_local_capabilities"], "waves": manifest["waves"], "tasks": tasks}
+
+
+def start_codex_dispatch(root, max_parallel=3):
+    base, state, manifest, before_head = _dispatch_gate(root, require_active=False)
+    if state["current_phase"] == "CODEX_HANDOFF_READY":
+        state_path = safe_project_path(base, ".idea-to-build/project_state.json")
+        original_state = state_path.read_bytes()
+        state["current_phase"] = "DEVELOPMENT_ACTIVE"
+        state["current_milestone"] = "Develop"
+        state["codex_dispatch_status"] = "ACTIVE"
+        state["codex_dispatch_started_at"] = utc_now()
+        state.setdefault("phase_history", []).append({"from": "CODEX_HANDOFF_READY", "to": "DEVELOPMENT_ACTIVE", "reason": "User-requested Codex development dispatch", "at": utc_now()})
+        save_state(base, state)
+        try:
+            git_commit_paths(base, [".idea-to-build/project_state.json"], "chore(codex): start approved subagent dispatch")
+        except Exception:
+            after = _run_git(base, ["rev-parse", "HEAD"], check=False)
+            if after.returncode == 0 and after.stdout.strip() != before_head:
+                raise IdeaToBuildError("Codex dispatch start commit succeeded but completion verification failed; preserve the durable commit")
+            state_path.write_bytes(original_state)
+            _run_git(base, ["restore", "--staged", "--", ".idea-to-build/project_state.json"], check=False)
+            raise
+    elif state.get("codex_dispatch_status") != "ACTIVE":
+        raise IdeaToBuildError("Codex dispatch is not active")
+    return preview_codex_dispatch(base, max_parallel=max_parallel, require_active=True)
+
+def _worktree_records(root):
+    result = _run_git(root, ["worktree", "list", "--porcelain"], check=False)
+    if result.returncode != 0: raise IdeaToBuildError("Cannot list Git worktrees: %s" % result.stderr.strip())
+    records, current = {}, {}
+    for line in result.stdout.splitlines() + [""]:
+        if not line:
+            if current.get("worktree"): records[str(Path(current["worktree"]).resolve())] = dict(current)
+            current = {}; continue
+        key, _, value = line.partition(" ")
+        current[key] = value
+    return records
+
+
+def materialize_codex_wave(root, wave_number, base_commit):
+    if not isinstance(wave_number, int) or wave_number < 1: raise IdeaToBuildError("wave_number must be a positive integer")
+    preview = preview_codex_dispatch(root, max_parallel=8, require_active=True)
+    if not isinstance(base_commit, str) or not re.fullmatch(r"[0-9a-fA-F]{40,64}", base_commit): raise IdeaToBuildError("base_commit must be a full Git object id")
+    if preview["base_commit"].lower() != base_commit.lower(): raise IdeaToBuildError("Wave base commit must equal the clean integration HEAD")
+    wave = next((item for item in preview["waves"] if item["number"] == wave_number), None)
+    if wave is None: raise IdeaToBuildError("Unknown Codex dispatch wave: %s" % wave_number)
+    task_by_id = {task["id"]: task for task in preview["tasks"]}
+    records = _worktree_records(root); planned = []
+    for task_id in wave["task_ids"]:
+        task = task_by_id[task_id]; target = Path(task["absolute_worktree"]); key = str(target.resolve())
+        branch_ref = "refs/heads/" + task["branch"]
+        branch_exists = _run_git(root, ["show-ref", "--verify", "--quiet", branch_ref], check=False).returncode == 0
+        record = records.get(key)
+        if record or branch_exists or target.exists():
+            if not (record and branch_exists and record.get("branch") == branch_ref and target.exists()):
+                raise IdeaToBuildError("Partial or conflicting worktree state for %s" % task_id)
+            if _run_git(root, ["merge-base", "--is-ancestor", base_commit, task["branch"]], check=False).returncode != 0:
+                raise IdeaToBuildError("Existing Codex task branch does not descend from the requested wave base: %s" % task_id)
+            planned.append({"task_id": task_id, "status": "EXISTING", "branch": task["branch"], "worktree": str(target), "prompt": str(target / Path(task["prompt"])), "task_name": task["task_name"], "spawn_prompt": task["spawn_prompt"]})
+        else:
+            planned.append({"task_id": task_id, "status": "CREATE", "branch": task["branch"], "worktree": str(target), "prompt": str(target / Path(task["prompt"])), "task_name": task["task_name"], "spawn_prompt": task["spawn_prompt"]})
+    created = []
+    try:
+        for item in planned:
+            if item["status"] != "CREATE": continue
+            result = _run_git(root, ["worktree", "add", "-b", item["branch"], item["worktree"], base_commit], check=False)
+            if result.returncode != 0: raise IdeaToBuildError("Git worktree creation failed for %s: %s" % (item["task_id"], result.stderr.strip() or result.stdout.strip()))
+            item["status"] = "CREATED"; created.append(item)
+    except Exception:
+        for item in reversed(created):
+            _run_git(root, ["worktree", "remove", "--force", item["worktree"]], check=False)
+            _run_git(root, ["branch", "-D", item["branch"]], check=False)
+        raise
+    return {"schema_version": 1, "ok": True, "wave": wave_number, "base_commit": base_commit, "worktrees": planned}
+
+
+def _path_owned_by(path, ownership):
+    normalized = str(path).strip().replace("\\", "/").strip("/")
+    return any(normalized == owner or normalized.startswith(owner + "/") for owner in ownership)
+
+
+def verify_codex_task_result(root, task_id, commit, base_commit):
+    preview = preview_codex_dispatch(root, max_parallel=8, require_active=True)
+    task = next((item for item in preview["tasks"] if item["id"] == task_id), None)
+    if task is None: raise IdeaToBuildError("Unknown Codex dispatch task: %s" % task_id)
+    for label, value in (("commit", commit), ("base_commit", base_commit)):
+        if not isinstance(value, str) or not re.fullmatch(r"[0-9a-fA-F]{40,64}", value): raise IdeaToBuildError("%s must be a full Git object id" % label)
+        if _run_git(root, ["cat-file", "-e", value + "^{commit}"], check=False).returncode != 0: raise IdeaToBuildError("Unknown Git commit for %s" % label)
+    tip = _run_git(root, ["rev-parse", task["branch"]], check=False)
+    if tip.returncode != 0 or tip.stdout.strip().lower() != commit.lower(): raise IdeaToBuildError("Reported commit is not the expected task branch tip")
+    if commit.lower() == base_commit.lower(): raise IdeaToBuildError("Codex task produced no commit")
+    if _run_git(root, ["merge-base", "--is-ancestor", base_commit, commit], check=False).returncode != 0: raise IdeaToBuildError("Task commit does not descend from its wave base")
+    diff = _run_git(root, ["diff", "--name-only", "--no-renames", "--diff-filter=ACDMRTUXB", base_commit + ".." + commit], check=False)
+    if diff.returncode != 0: raise IdeaToBuildError("Cannot inspect task changes: %s" % diff.stderr.strip())
+    changed = [line.replace("\\", "/") for line in diff.stdout.splitlines() if line.strip()]
+    if not changed: raise IdeaToBuildError("Codex task commit has no changed files")
+    outside = [path for path in changed if not _path_owned_by(path, task["ownership"])]
+    if outside: raise IdeaToBuildError("Codex task changed files outside ownership: %s" % ", ".join(outside))
+    return {"schema_version": 1, "ok": True, "task_id": task_id, "branch": task["branch"], "base_commit": base_commit, "commit": commit, "changed_files": changed, "ownership": task["ownership"]}
+
+
+def merge_codex_task_result(root, task_id, commit, base_commit):
+    verification = verify_codex_task_result(root, task_id, commit, base_commit)
+    base = project_root(root)
+    current = _run_git(base, ["rev-parse", "HEAD"], check=False)
+    if current.returncode != 0: raise IdeaToBuildError("Cannot resolve integration HEAD")
+    before_head = current.stdout.strip()
+    if _run_git(base, ["merge-base", "--is-ancestor", commit, before_head], check=False).returncode == 0:
+        return {"schema_version": 1, "ok": True, "status": "ALREADY_MERGED", "task_id": task_id, "commit": commit, "integration_commit": before_head, "changed_files": verification["changed_files"]}
+    merged = _run_git(base, ["merge", "--no-ff", "--no-edit", commit], check=False)
+    if merged.returncode != 0:
+        aborted = _run_git(base, ["merge", "--abort"], check=False)
+        detail = merged.stderr.strip() or merged.stdout.strip()
+        if aborted.returncode != 0 or _dispatch_dirty_paths(base):
+            raise IdeaToBuildError("Codex task merge failed and automatic abort was incomplete; preserve the repository for recovery: %s" % detail)
+        raise IdeaToBuildError("Codex task merge conflicted and was aborted; task branch was retained: %s" % detail)
+    integration = _run_git(base, ["rev-parse", "HEAD"], check=False)
+    if integration.returncode != 0 or integration.stdout.strip() == before_head:
+        raise IdeaToBuildError("Codex task merge did not produce a new integration commit")
+    core = verify_core(base)
+    if not core["ok"]:
+        raise IdeaToBuildError("Core verification failed after durable task merge; preserve the commit and stop: %s" % "; ".join(core["mismatches"]))
+    return {"schema_version": 1, "ok": True, "status": "MERGED", "task_id": task_id, "commit": commit, "integration_commit": integration.stdout.strip(), "changed_files": verification["changed_files"], "core_hash": core["core_hash"]}
+
+def retire_codex_wave(root, wave_number):
+    preview = preview_codex_dispatch(root, max_parallel=8, require_active=True)
+    wave = next((item for item in preview["waves"] if item["number"] == wave_number), None)
+    if wave is None: raise IdeaToBuildError("Unknown Codex dispatch wave: %s" % wave_number)
+    task_by_id = {task["id"]: task for task in preview["tasks"]}; targets = []
+    for task_id in wave["task_ids"]:
+        target = Path(task_by_id[task_id]["absolute_worktree"])
+        if not target.exists(): continue
+        status = _run_git(target, ["status", "--porcelain", "--untracked-files=all"], check=False)
+        if status.returncode != 0 or status.stdout.strip(): raise IdeaToBuildError("Refusing to remove dirty Codex worktree: %s" % target)
+        targets.append((task_id, target))
+    removed = []
+    for task_id, target in targets:
+        result = _run_git(root, ["worktree", "remove", str(target)], check=False)
+        if result.returncode != 0: raise IdeaToBuildError("Cannot retire Codex worktree %s: %s" % (target, result.stderr.strip()))
+        removed.append({"task_id": task_id, "worktree": str(target)})
+    return {"schema_version": 1, "ok": True, "wave": wave_number, "removed": removed, "branches_retained": True}
 
 def generate_handoff(root, workstreams=None):
     base, state = project_root(root), load_state(root)
@@ -662,7 +1020,10 @@ def generate_handoff(root, workstreams=None):
     verified = verify_core(base)
     if not verified["ok"]: raise IdeaToBuildError("Core verification failed: %s" % "; ".join(verified["mismatches"]))
     generated = generate_design_documents(base); state = load_state(base); threads = plan_threads(base, workstreams)
-    lines = ["# Codex Development Handoff", "", "This project should use exactly **%d Codex threads**." % len(threads), "", "Frozen core hash: `%s`" % state.get("core_hash"), "", "## Merge sequence", "", "1. Thread 0 validates plans and ownership.", "2. Independent development branches merge in numeric order after their checks pass.", "3. Quality validates the integrated tree and reports findings.", "4. Release work merges last when present.", ""]
+
+    subagents_recommended = len(threads) > 1
+    mode_text = "Subagents are recommended because independent non-overlapping workstreams exist." if subagents_recommended else "Use the root agent directly; one effective workstream does not justify subagent overhead."
+    lines = ["# Codex Development Handoff", "", "Recommended Codex execution: **%s**." % ("root agent plus %d scoped tasks" % (len(threads) - 1) if subagents_recommended else "single root agent"), "", mode_text, "Frozen core hash: `%s`" % state.get("core_hash"), "", "Codex activation policy: **start after freeze when the user asks to proceed with development**.", "Dispatch manifest: `codex/dispatch.json`.", "", "## Merge sequence", "", "1. Thread 0 validates plans and ownership.", "2. Independent development branches merge in numeric order after their checks pass.", "3. Quality validates the integrated tree and reports findings.", "4. Release work merges last when present.", ""]
     prompt_dir = safe_project_path(base, "codex/prompts"); prompt_dir.mkdir(parents=True, exist_ok=True)
     for old in prompt_dir.glob("[0-9][0-9]-*.md"):
         safe = safe_project_path(base, old.relative_to(base).as_posix()); safe.unlink()
@@ -671,8 +1032,10 @@ def generate_handoff(root, workstreams=None):
         lines += ["## Thread %d — %s" % (thread["number"], thread["name"]), "", "- Goal: %s" % thread["goal"], "- Branch: `%s`" % thread["branch"], "- Worktree: `%s`" % thread["worktree"], "- Writable ownership: %s" % ", ".join("`%s`" % item for item in thread["files"]), "- Inputs: AGENTS.md, frozen core, live status, risks, decisions, relevant ExecPlan", "- Outputs: scoped implementation or review evidence, a stable commit, and handoff summary", "- Dependencies: %s" % (", ".join(thread["dependencies"]) or "None"), "- Start condition: core verification passes and dependencies are available", "- Completion condition: tests pass, core remains valid, live updates are handed to Thread 0, and work is committed", "- Merge order: %d" % thread["merge_order"], ""]
         filename = "%02d-%s.md" % (thread["number"], slugify(thread["name"])); safe_project_path(base, "codex/prompts/" + filename).write_text(_thread_prompt(thread["number"], thread), encoding="utf-8"); prompt_paths.append("codex/prompts/" + filename)
     safe_project_path(base, "codex/HANDOFF.md").write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
-    state["planned_codex_threads"] = len(threads); state["generated_documents"] = sorted(set(state.get("generated_documents", []) + generated + ["codex/HANDOFF.md"] + prompt_paths)); state["current_phase"] = "CODEX_HANDOFF_READY"; state["current_milestone"] = "Handoff"; save_state(base, state)
-    return {"schema_version": 1, "thread_count": len(threads), "threads": threads, "handoff": "codex/HANDOFF.md", "prompts": prompt_paths}
+    dispatch = _build_codex_dispatch_manifest(base, state, threads, prompt_paths)
+    write_project_json(base, CODEX_DISPATCH_MANIFEST, dispatch)
+    state["planned_codex_threads"] = len(threads); state["generated_documents"] = sorted(set(state.get("generated_documents", []) + generated + ["codex/HANDOFF.md", CODEX_DISPATCH_MANIFEST] + prompt_paths)); state["current_phase"] = "CODEX_HANDOFF_READY"; state["current_milestone"] = "Handoff"; state["codex_dispatch_status"] = "READY" if dispatch["subagents_recommended"] else "NOT_NEEDED"; save_state(base, state)
+    return {"schema_version": 1, "thread_count": len(threads), "threads": threads, "handoff": "codex/HANDOFF.md", "prompts": prompt_paths, "dispatch": CODEX_DISPATCH_MANIFEST, "subagents_recommended": dispatch["subagents_recommended"], "recommendation_reason": dispatch["recommendation_reason"], "waves": dispatch["waves"]}
 
 def should_activate(text):
     normalized = text.strip().lower()
@@ -691,7 +1054,7 @@ def initialize_project(template_dir, scripts_dir, target, name, language="en", f
     project_name = validate_single_line("project name", name, 160)
     destination.mkdir(parents=True, exist_ok=True); project_id, created_at = str(uuid.uuid4()), utc_now()
     replacements = {"{{PROJECT_NAME}}": project_name, "{{PROJECT_ID}}": project_id, "{{CREATED_AT}}": created_at}; created = []
-    runtime_names = ("idea_to_build_lib.py", "project_state.py", "research_report.py", "requirements_check.py", "freeze_core.py", "verify_core.py", "render_context.py", "generate_handoff.py", "validate_package.py")
+    runtime_names = ("idea_to_build_lib.py", "project_state.py", "research_report.py", "requirements_check.py", "freeze_core.py", "verify_core.py", "render_context.py", "generate_handoff.py", "codex_dispatch.py", "validate_package.py")
     plans = []
     for source in sorted(template.rglob("*")):
         if source.is_symlink(): raise IdeaToBuildError("Template links are not allowed: %s" % source)
@@ -731,7 +1094,7 @@ def initialize_project(template_dir, scripts_dir, target, name, language="en", f
 
 def validate_project_package(root):
     base = project_root(root)
-    required = ["AGENTS.md", ".idea-to-build/project_state.json", ".idea-to-build/requirements_ledger.json"] + list(CORE_FILES) + ["docs/live/STATUS.md", "docs/live/ROADMAP.md", "docs/live/BACKLOG.md", "docs/live/DECISIONS.md", "docs/live/RISKS.md", "docs/live/RESEARCH.md", "docs/live/RELEASES.md", "docs/live/CHANGE_REQUESTS.md", "codex/HANDOFF.md", "scripts/idea_to_build_lib.py", "scripts/verify_core.py"]
+    required = ["AGENTS.md", ".idea-to-build/project_state.json", ".idea-to-build/requirements_ledger.json"] + list(CORE_FILES) + ["docs/live/STATUS.md", "docs/live/ROADMAP.md", "docs/live/BACKLOG.md", "docs/live/DECISIONS.md", "docs/live/RISKS.md", "docs/live/RESEARCH.md", "docs/live/RELEASES.md", "docs/live/CHANGE_REQUESTS.md", "codex/HANDOFF.md", "codex/dispatch.json", "scripts/idea_to_build_lib.py", "scripts/verify_core.py", "scripts/codex_dispatch.py"]
     errors = []
     for item in required:
         try:

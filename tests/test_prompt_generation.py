@@ -4,9 +4,9 @@ from _support import ProjectFixture, itb
 class PromptGenerationTests(unittest.TestCase):
     def setUp(self): self.fx = ProjectFixture(); self.fx.freeze()
     def tearDown(self): self.fx.close()
-    def test_small_project_has_exactly_three_threads(self):
+    def test_small_project_recommends_single_root_agent(self):
         result = itb.generate_handoff(self.fx.root, [{"name": "App", "goal": "Build app", "files": ["src"], "tests": ["python -m unittest"]}])
-        self.assertEqual(result["thread_count"], 3); self.assertIn("exactly **3 Codex threads**", (self.fx.root / "codex/HANDOFF.md").read_text(encoding="utf-8"))
+        self.assertEqual(result["thread_count"], 1); self.assertFalse(result["subagents_recommended"]); self.assertIn("single root agent", (self.fx.root / "codex/HANDOFF.md").read_text(encoding="utf-8"))
     def test_complex_project_gets_parallel_threads(self):
         streams = [{"name": name, "goal": "Build " + name, "files": [path], "tests": ["test " + name]} for name, path in (("Frontend", "web"), ("Backend", "server"), ("Search", "search"), ("Infrastructure", "infra"))]
         threads = itb.plan_threads(self.fx.root, streams); self.assertEqual(len(threads), 7); self.assertEqual(len([item for item in threads if item["number"] in range(1, 5)]), 4)

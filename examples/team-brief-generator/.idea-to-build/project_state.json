@@ -4,7 +4,7 @@
   "project_name": "Team Brief Generator",
   "current_phase": "CODEX_HANDOFF_READY",
   "created_at": "2026-08-05T05:05:18Z",
-  "updated_at": "2026-08-05T11:03:22Z",
+  "updated_at": "2026-08-05T15:11:54Z",
   "user_language": "en",
   "search_status": "COMPLETE",
   "research_decision": "BUILD_CUSTOM",
@@ -18,10 +18,13 @@
     "confirmed_at": "2026-08-05T05:05:19Z",
     "actor": "human"
   },
+  "codex_dispatch_status": "READY",
+  "codex_dispatch_started_at": null,
   "unresolved_questions": [],
   "accepted_assumptions": [],
   "generated_documents": [
     "codex/HANDOFF.md",
+    "codex/dispatch.json",
     "codex/prompts/00-orchestrator-architecture-and-integratio.md",
     "codex/prompts/01-input-and-parsing.md",
     "codex/prompts/02-brief-generation.md",

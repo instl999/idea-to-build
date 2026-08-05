@@ -16,6 +16,10 @@ Most processing is local. Live research uses the host's Web Search, so query tex
 - Prefer aggregate/example data and official public sources. Record only the evidence needed for the decision.
 - Review generated prompts: requirements embedded in them may be repeated across tasks.
 
+## Subagent prompt minimization
+
+Before generating or sending a child-agent prompt, include only the frozen constraints and scoped context needed for that workstream. Do not duplicate raw research transcripts, credentials, personal records, proprietary source excerpts, or unrelated organization details. Subagent/worktree execution uses the host and local Git permissions; any remote model processing follows the host's data policy, not a separate plugin backend.
+
 ## Storage and retention
 
 Generated projects store data as ordinary local UTF-8/JSON/Markdown files and Git history. `.idea-to-build/guardrail.log` and `last_test.json` are ignored by this repository template but may remain locally. Deleting working files does not remove them from Git history, backups, worktrees, remote forks, Web Search provider logs, or already shared prompts.

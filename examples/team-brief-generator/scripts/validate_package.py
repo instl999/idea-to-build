@@ -9,7 +9,7 @@ PLUGIN_REQUIRED = (
     "skills/idea-to-build/references/workflow.md", "skills/idea-to-build/references/solution-research.md",
     "skills/idea-to-build/references/requirements-readiness.md", "skills/idea-to-build/references/document-contracts.md",
     "skills/idea-to-build/references/codex-orchestration.md", "skills/idea-to-build/references/git-policy.md",
-    "skills/idea-to-build/references/security-policy.md", "skills/idea-to-build/assets/project-template/AGENTS.md",
+    "skills/idea-to-build/references/security-policy.md", "skills/idea-to-build/scripts/codex_dispatch.py", "skills/idea-to-build/assets/project-template/AGENTS.md",
     "hooks/hooks.json", "hooks/session_start.py", "hooks/user_prompt_submit.py", "hooks/pre_tool_use.py",
     "hooks/post_tool_use.py", "hooks/stop_check.py", "README.md", "README.zh-CN.md", "SECURITY.md", "SECURITY.zh-CN.md",
     "CONTRIBUTING.md", "CONTRIBUTING.zh-CN.md", "docs/ARCHITECTURE.md", "docs/ARCHITECTURE.zh-CN.md",

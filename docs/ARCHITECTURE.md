@@ -28,6 +28,12 @@ The presence and validity of a non-template `core.lock.json` is the monotonic fr
 
 Generated design files, live documents, prompts, and runtime copies remain mutable. Their content is derived guidance and can contain untrusted user/research data.
 
+## On-demand development orchestration
+
+Handoff generation first merges overlapping ownership. One effective workstream produces `SINGLE_AGENT` mode and a root-agent prompt only. Two or more independent workstreams produce `SUBAGENTS` mode, self-contained prompts, dependency waves, and isolated sibling worktrees.
+
+`codex/dispatch.json` is a hashed execution manifest bound to the project ID and frozen core hash. Root-agent versus subagent execution is reversible and not part of the frozen product contract. Native execution requires a current user request to proceed after freeze, a clean exact Git root, committed prompts/manifest, and available Codex collaboration tools. The local adapter creates worktrees, validates commits, and performs conflict-aborting verified merges; it does not provide or emulate the host's subagent API.
+
 ## Trust boundaries
 
 - Host ↔ Plugin: the host decides installation, filesystem/network/tool access, Hook trust, and event delivery.

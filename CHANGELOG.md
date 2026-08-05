@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 - 2026-08-05
+
+- Added on-demand development orchestration: one effective workstream stays with the root agent, while independent workstreams receive scoped subagent prompts and dependency waves.
+- Added a hash-bound Codex dispatch manifest and Codex-native adapter flow for clean worktree creation, result verification, and safe retirement.
+- Narrowed the Skill to Codex: after the human freezes the product core, a user request to proceed activates native root-agent or subagent execution without polluting the immutable contract with a reversible orchestration choice.
+- Added branch-tip, ancestry, non-empty diff, and file-ownership verification before child commits can be merged.
+- Expanded English and Chinese architecture, privacy, security, change-control, usage, and compatibility documentation.
+
 ## 0.2.0 - 2026-08-05
 
 - Hardened Hooks so they load only the installed runtime and derive freeze state from the core lock.

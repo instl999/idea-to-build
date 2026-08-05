@@ -15,7 +15,7 @@ You own only this workstream: Maintain the ExecPlan, coordinate ownership, integ
 
 ## Git rules
 
-- Use branch `codex/00-orchestrator-architecture-and-integratio` in worktree `../team-brief-generator-00-orchestrator-architecture-and-integratio`.
+- Use branch `current integration branch` in worktree `.`.
 - Initialize Git only if absent; never start major work in an unexplained dirty tree.
 - Use a separate worktree for parallel changes and stay within the ownership below.
 - Commit each runnable, tested stable feature with an accurate message.

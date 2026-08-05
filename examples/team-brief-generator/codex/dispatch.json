@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "adapter": "codex-subagent-worktree-v1",
+  "created_at": "2026-08-05T15:11:54Z",
+  "project_id": "1447978e-81af-4ef0-9f9e-58c0d34d4e92",
+  "project_name": "Team Brief Generator",
+  "core_hash": "409bf7fe207f8da0d0e50eff1f0c2ff16b1eb70720b89cfdabd2e742281e7b73",
+  "activation_policy": "Start only after core freeze when the user asks Codex to proceed with development.",
+  "authorization": {
+    "actor": "human",
+    "confirmed_at": "2026-08-05T05:05:19Z"
+  },
+  "orchestrator": {
+    "number": 0,
+    "name": "Orchestrator, architecture, and integration",
+    "prompt": "codex/prompts/00-orchestrator-architecture-and-integratio.md",
+    "prompt_sha256": "a9be15230b8d281751495f80d8e5d9e9f44dd7d0d15b3dde55c8bd79cf37a0c6",
+    "ownership": [
+      "plans",
+      "docs/live/DECISIONS.md",
+      "docs/live/RISKS.md"
+    ]
+  },
+  "orchestration_mode": "SUBAGENTS",
+  "subagents_recommended": true,
+  "recommendation_reason": "Independent non-overlapping workstreams justify isolated subagents.",
+  "required_host_tools": [
+    "spawn_agent",
+    "wait_agent"
+  ],
+  "optional_host_tools": [
+    "send_message",
+    "followup_task",
+    "interrupt_agent",
+    "list_agents"
+  ],
+  "required_local_capabilities": [
+    "git",
+    "git_worktree"
+  ],
+  "recommended_max_parallel": 3,
+  "tasks": [
+    {
+      "id": "task-01-input-and-parsing",
+      "number": 1,
+      "task_name": "task_01_input_and_parsing",
+      "name": "Input and parsing",
+      "goal": "Implement validated note ingestion and deterministic parsing",
+      "prompt": "codex/prompts/01-input-and-parsing.md",
+      "prompt_sha256": "35e0df5a47ac91692f3b4f22772c02fb1d95bfe95ecc13a925dd5afbfaf93863",
+      "branch": "codex/01-input-and-parsing",
+      "worktree": "../team-brief-generator-01-input-and-parsing",
+      "ownership": [
+        "src/intake",
+        "src/shared",
+        "package.json",
+        "package-lock.json",
+        "tsconfig.json"
+      ],
+      "dependencies": [],
+      "tests": [
+        "npm test -- intake"
+      ],
+      "merge_order": 1
+    },
+    {
+      "id": "task-02-brief-generation",
+      "number": 2,
+      "task_name": "task_02_brief_generation",
+      "name": "Brief generation",
+      "goal": "Build traceable brief generation and editing state",
+      "prompt": "codex/prompts/02-brief-generation.md",
+      "prompt_sha256": "7003412a0ca28c5d2ad38e783f0d349a0771d70e97de97acd995a04e6259b856",
+      "branch": "codex/02-brief-generation",
+      "worktree": "../team-brief-generator-02-brief-generation",
+      "ownership": [
+        "src/generation"
+      ],
+      "dependencies": [
+        "task-01-input-and-parsing"
+      ],
+      "tests": [
+        "npm test -- generation"
+      ],
+      "merge_order": 2
+    },
+    {
+      "id": "task-03-export-and-persistence",
+      "number": 3,
+      "task_name": "task_03_export_and_persistence",
+      "name": "Export and persistence",
+      "goal": "Implement local persistence, deletion, and Markdown export",
+      "prompt": "codex/prompts/03-export-and-persistence.md",
+      "prompt_sha256": "74592dc2d211aa17ed758232b532b5e28fe00f8c8d15a8134a23898256745a84",
+      "branch": "codex/03-export-and-persistence",
+      "worktree": "../team-brief-generator-03-export-and-persistence",
+      "ownership": [
+        "src/export"
+      ],
+      "dependencies": [
+        "task-01-input-and-parsing"
+      ],
+      "tests": [
+        "npm test -- export"
+      ],
+      "merge_order": 3
+    },
+    {
+      "id": "task-04-review-interface",
+      "number": 4,
+      "task_name": "task_04_review_interface",
+      "name": "Review interface",
+      "goal": "Build the accessible review workflow",
+      "prompt": "codex/prompts/04-review-interface.md",
+      "prompt_sha256": "0d08c95e0019a0e2229aed6aae57112121e6e329b2206cfe91b0ddbc0b83163a",
+      "branch": "codex/04-review-interface",
+      "worktree": "../team-brief-generator-04-review-interface",
+      "ownership": [
+        "ui"
+      ],
+      "dependencies": [
+        "task-01-input-and-parsing"
+      ],
+      "tests": [
+        "npm test -- ui"
+      ],
+      "merge_order": 4
+    },
+    {
+      "id": "task-05-quality-engineering",
+      "number": 5,
+      "task_name": "task_05_quality_engineering",
+      "name": "Quality engineering",
+      "goal": "Report test, integration, security, performance, regression, and core-consistency findings",
+      "prompt": "codex/prompts/05-quality-engineering.md",
+      "prompt_sha256": "714d811489c534a62706a7639ba726abfad91d086e78247112df8bf643a960fc",
+      "branch": "codex/05-quality-engineering",
+      "worktree": "../team-brief-generator-05-quality-engineering",
+      "ownership": [
+        "tests",
+        "quality"
+      ],
+      "dependencies": [
+        "task-01-input-and-parsing",
+        "task-02-brief-generation",
+        "task-03-export-and-persistence",
+        "task-04-review-interface"
+      ],
+      "tests": [
+        "npm test",
+        "python scripts/verify_core.py --path ."
+      ],
+      "merge_order": 5
+    },
+    {
+      "id": "task-06-release-and-operations",
+      "number": 6,
+      "task_name": "task_06_release_and_operations",
+      "name": "Release and operations",
+      "goal": "Complete release checks, documentation, migration, deployment, rollback, and release records",
+      "prompt": "codex/prompts/06-release-and-operations.md",
+      "prompt_sha256": "19ea0489f8fdfa7e37eae24c14e46b544b69415e9c8334a5146a33fefce689cb",
+      "branch": "codex/06-release-and-operations",
+      "worktree": "../team-brief-generator-06-release-and-operations",
+      "ownership": [
+        "docs/live/STATUS.md",
+        "docs/live/RELEASES.md",
+        "deploy"
+      ],
+      "dependencies": [
+        "task-05-quality-engineering"
+      ],
+      "tests": [
+        "python scripts/verify_core.py --path ."
+      ],
+      "merge_order": 6
+    }
+  ],
+  "waves": [
+    {
+      "number": 1,
+      "task_ids": [
+        "task-01-input-and-parsing"
+      ]
+    },
+    {
+      "number": 2,
+      "task_ids": [
+        "task-02-brief-generation",
+        "task-03-export-and-persistence",
+        "task-04-review-interface"
+      ]
+    },
+    {
+      "number": 3,
+      "task_ids": [
+        "task-05-quality-engineering"
+      ]
+    },
+    {
+      "number": 4,
+      "task_ids": [
+        "task-06-release-and-operations"
+      ]
+    }
+  ],
+  "manifest_sha256": "28a8359dee9b5ae9e91c24179988278b9926b340e069b8f5cd986969112b9e03"
+}
