@@ -1,0 +1,20 @@
+{
+  "name": "idea-to-build-local",
+  "interface": {
+    "displayName": "Idea-to-Build Local"
+  },
+  "plugins": [
+    {
+      "name": "idea-to-build",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
