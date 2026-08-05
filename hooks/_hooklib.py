@@ -15,8 +15,10 @@ PROTECTED_EXACT = {
 PROTECTED_PREFIXES = ("docs/core/", "hooks/", ".codex/hooks/")
 MUTATING_TOOL = re.compile(r"(?i)(apply_patch|edit|write|delete|remove|move|rename|replace|create)")
 MUTATING_COMMAND = re.compile(
-    r"(?ix)(^|[;&|]\s*)(rm|mv|cp|chmod|sed|perl|python(?:3)?|git\s+(restore|checkout|reset|clean|mv|rm)|"
-    r"set-content|add-content|out-file|remove-item|move-item|copy-item|rename-item|new-item|tee)\b|(?<![<>=])>{1,2}(?![=>])"
+    r"(?ix)(^|[;&|]\s*)(rm|mv|cp|chmod|sed|perl|python(?:3)?|truncate|dd|install|tar|unzip|7z|robocopy|xcopy|"
+    r"git\s+(restore|checkout|reset|clean|mv|rm|apply|am|merge|cherry-pick|rebase|revert|switch|stash|read-tree|update-index)|"
+    r"set-content|add-content|clear-content|out-file|remove-item|move-item|copy-item|rename-item|new-item|tee)\b|"
+    r"(?:system\.io\.file|\[io\.file\])::(?:write|append|delete|move|copy)|(?<![<>=])>{1,2}(?![=>])"
 )
 PROTECTED_FRAGMENT = re.compile(
     r"(?i)(?:[A-Za-z]:)?[^\s'\"]*(?:docs[\\/]core(?:[\\/][^\s'\"]*)?|\.idea-to-build[\\/]core\.lock\.json|"
@@ -41,9 +43,12 @@ def find_root(start):
     return None
 
 def load_runtime(root):
-    runtime_path = root / "scripts" / "idea_to_build_lib.py"
-    if not runtime_path.is_file(): raise RuntimeError("Idea-to-Build runtime is missing from generated project")
-    spec = importlib.util.spec_from_file_location("idea_to_build_project_runtime", str(runtime_path))
+    # An opened repository is untrusted. Import only the runtime shipped with
+    # this installed plugin; project-controlled Python must never execute just
+    # because lifecycle hooks inspect a generated project.
+    runtime_path = Path(__file__).resolve().parents[1] / "skills" / "idea-to-build" / "scripts" / "idea_to_build_lib.py"
+    if not runtime_path.is_file(): raise RuntimeError("Trusted Idea-to-Build plugin runtime is missing")
+    spec = importlib.util.spec_from_file_location("idea_to_build_trusted_plugin_runtime", str(runtime_path))
     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
     return module
 
@@ -74,7 +79,8 @@ def relative_if_inside(root, cwd, value):
     return relative.as_posix().lower()
 
 def is_protected(relative):
-    relative = relative.lower().lstrip("./")
+    relative = relative.lower()
+    if relative.startswith("./"): relative = relative[2:]
     return relative in PROTECTED_EXACT or any(relative.startswith(prefix) for prefix in PROTECTED_PREFIXES)
 
 def string_leaves(value):
@@ -105,10 +111,21 @@ def forbidden_request(event, root):
     tool_name = str(event.get("tool_name", "")); tool_input = event.get("tool_input") or {}
     if not isinstance(tool_input, dict): tool_input = {"value": tool_input}
     command = str(tool_input.get("command", ""))
-    frozen = bool(load_runtime(root).load_state(root).get("core_frozen"))
+    runtime = load_runtime(root)
+    lock_path = root / ".idea-to-build" / "core.lock.json"
+    frozen = False
+    if lock_path.is_file():
+        try:
+            lock = runtime.load_json(lock_path)
+            frozen = not bool(lock.get("template_only"))
+        except Exception:
+            # A malformed lock is still evidence of an attempted frozen
+            # baseline. Fail closed and let verification explain the damage.
+            frozen = True
     if re.search(r"(?i)(?:^|[\\/])freeze_core\.py\b", command): return "freeze_core.py is human-controlled and cannot be run by an AI tool call"
     if re.search(r"(?i)project_state\.py\s+confirm-core\b", command): return "core confirmation is human-controlled"
     if not command_is_mutating(tool_name, tool_input): return None
+    if frozen and re.search(r"(?i)\bgit\s+(?:apply|am|merge|cherry-pick|rebase|revert|read-tree)\b", command): return "opaque Git operation is blocked while a frozen core is present"
     cwd = Path(event.get("cwd") or root).expanduser().resolve()
     for leaf in string_leaves(tool_input):
         for token in candidate_tokens(leaf):
@@ -124,15 +141,22 @@ def forbidden_request(event, root):
     return None
 
 def verify_or_reason(root):
-    runtime = load_runtime(root); state = runtime.load_state(root)
-    if not state.get("core_frozen"): return None, runtime.render_context(root)
+    runtime = load_runtime(root)
+    lock_path = root / ".idea-to-build" / "core.lock.json"
+    if not lock_path.is_file(): return None, runtime.render_context(root)
+    try:
+        lock = runtime.load_json(lock_path)
+    except Exception as exc:
+        return "core.lock.json is unreadable: %s" % exc, runtime.render_context(root)
+    if lock.get("template_only"): return None, runtime.render_context(root)
     result = runtime.verify_core(root)
     return (None if result["ok"] else "; ".join(result["mismatches"])), runtime.render_context(root)
 
 def git_changes(root):
     result = subprocess.run(["git", "-C", str(root), "status", "--porcelain"], text=True, capture_output=True)
-    return result.stdout.splitlines() if result.returncode == 0 else []
+    return result.stdout.splitlines() if result.returncode == 0 else None
 
 def append_guardrail_event(root, message):
-    path = root / ".idea-to-build" / "guardrail.log"
+    runtime = load_runtime(root)
+    path = runtime.safe_project_path(root, ".idea-to-build/guardrail.log")
     with path.open("a", encoding="utf-8") as handle: handle.write(message.replace("\n", " ")[:1000] + "\n")

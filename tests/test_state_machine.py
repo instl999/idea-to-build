@@ -21,4 +21,10 @@ class StateMachineTests(unittest.TestCase):
         path = self.fx.root / ".idea-to-build" / "project_state.json"; payload = json.loads(path.read_text(encoding="utf-8")); payload["schema_version"] = 999; path.write_text(json.dumps(payload), encoding="utf-8")
         with self.assertRaisesRegex(itb.IdeaToBuildError, "newer"): itb.load_state(self.fx.root)
 
+    def test_every_declared_transition_is_accepted(self):
+        for source, targets in itb.TRANSITIONS.items():
+            for target in targets:
+                with self.subTest(source=source, target=target):
+                    state = itb.load_state(self.fx.root); state["current_phase"] = source; itb.save_state(self.fx.root, state)
+                    self.assertEqual(itb.transition_state(self.fx.root, target)["current_phase"], target)
 if __name__ == "__main__": unittest.main()

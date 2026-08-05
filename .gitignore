@@ -8,6 +8,16 @@ build/
 *.egg-info/
 .venv/
 venv/
+.env*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
 .idea-to-build/guardrail.log
 .idea-to-build/last_test.json
 .test-tmp/

@@ -27,4 +27,13 @@ class ResearchWorkflowTests(unittest.TestCase):
         bad = candidate(); bad["functional_fit"] = 12
         with self.assertRaises(itb.IdeaToBuildError): itb.score_candidate(bad)
 
+    def test_online_search_without_candidates_is_insufficient(self):
+        result = itb.decide_research({"network_available": True, "candidates": []})
+        self.assertEqual(result["decision"], "INSUFFICIENT_RESEARCH"); self.assertFalse(result["candidate_gap"])
+    def test_not_recommended_candidate_cannot_be_adopted(self):
+        result = itb.decide_research({"network_available": True, "candidates": [candidate(score=.99, not_recommended=True)]})
+        self.assertEqual(result["decision"], "NOT_RECOMMENDED")
+    def test_report_escapes_markdown_cells(self):
+        report, _ = itb.render_research_report({"network_available": True, "candidates": [candidate(name="A|B", score=.7)]})
+        self.assertIn("A\\|B", report)
 if __name__ == "__main__": unittest.main()

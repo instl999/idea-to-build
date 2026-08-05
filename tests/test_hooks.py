@@ -27,9 +27,19 @@ class HookTests(unittest.TestCase):
         event = {"session_id": "s", "turn_id": "t", "cwd": str(self.fx.root), "hook_event_name": "PostToolUse", "tool_name": "Bash", "tool_use_id": "u", "tool_input": {"command": "unknown"}, "tool_response": {}}
         result = run_hook("post_tool_use.py", event); self.assertFalse(result["continue"]); self.assertEqual(result["decision"], "block")
     def test_non_project_is_quiet(self):
-        import tempfile
-        with tempfile.TemporaryDirectory(dir=str(ROOT / ".test-tmp")) as empty:
+        import shutil, uuid
+        empty = ROOT / ".test-tmp" / ("empty-" + uuid.uuid4().hex); empty.mkdir()
+        try:
             event = self.event("Bash", "echo ok", empty); self.assertIsNone(run_hook("pre_tool_use.py", event))
+        finally: shutil.rmtree(empty, ignore_errors=True)
+    def test_project_runtime_is_never_imported(self):
+        marker = self.fx.root / "project-runtime-executed"
+        runtime = self.fx.root / "scripts" / "idea_to_build_lib.py"
+        runtime.write_text("from pathlib import Path\nPath(%r).write_text('executed')\nraise RuntimeError('untrusted project runtime executed')\n" % str(marker), encoding="utf-8")
+        event = {"session_id": "s", "turn_id": "t", "cwd": str(self.fx.root), "hook_event_name": "UserPromptSubmit", "prompt": "continue", "permission_mode": "default"}
+        result = run_hook("user_prompt_submit.py", event)
+        self.assertFalse(marker.exists())
+        self.assertIn("Core status: VERIFIED", result["hookSpecificOutput"]["additionalContext"])
     def test_draft_core_edit_is_allowed(self):
         other = ProjectFixture()
         try:
@@ -37,4 +47,22 @@ class HookTests(unittest.TestCase):
             self.assertIsNone(run_hook("pre_tool_use.py", event))
         finally: other.close()
 
+    def test_structured_dotted_protected_paths_are_blocked(self):
+        for path in (".idea-to-build/core.lock.json", ".codex/hooks/guard.py"):
+            event = self.event("write", ""); event["tool_input"] = {"path": path, "content": "tamper"}
+            result = run_hook("pre_tool_use.py", event)
+            self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+    def test_state_flag_cannot_unfreeze_core(self):
+        state_path = self.fx.root / ".idea-to-build/project_state.json"
+        import json
+        state = json.loads(state_path.read_text(encoding="utf-8")); state["core_frozen"] = False
+        state_path.write_text(json.dumps(state), encoding="utf-8")
+        self.assert_blocked("apply_patch", "*** Update File: docs/core/PROJECT_CHARTER.md")
+    def test_opaque_git_mutations_are_blocked_when_frozen(self):
+        for command in ("git apply update.patch", "git merge topic", "git cherry-pick HEAD~1"):
+            with self.subTest(command=command): self.assert_blocked("Bash", command)
+    def test_session_start_verifies_and_injects_context(self):
+        event = {"cwd": str(self.fx.root), "hook_event_name": "SessionStart"}
+        result = run_hook("session_start.py", event)
+        self.assertIn("Core status: VERIFIED", result["hookSpecificOutput"]["additionalContext"])
 if __name__ == "__main__": unittest.main()

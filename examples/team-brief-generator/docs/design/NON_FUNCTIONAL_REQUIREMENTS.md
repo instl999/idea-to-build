@@ -1,6 +1,6 @@
 # Non-functional Requirements
 
-Generated from frozen core hash `409bf7fe207f8da0d0e50eff1f0c2ff16b1eb70720b89cfdabd2e742281e7b73`.
+> Working design scaffold generated from frozen core hash `409bf7fe207f8da0d0e50eff1f0c2ff16b1eb70720b89cfdabd2e742281e7b73`; complete and review it before implementation.
 
 ## Evidence labels
 
@@ -39,7 +39,7 @@ Generated from frozen core hash `409bf7fe207f8da0d0e50eff1f0c2ff16b1eb70720b89cf
 - **User-confirmed fact — End-to-end acceptance criteria:** The golden note yields all expected sections and traceable source spans; edits persist; Markdown export matches the reviewed content; offline use passes.
 - **User-confirmed fact — Edge cases:** Empty notes, unsupported encodings, duplicate action items, missing owners/dates, very long lines, and malicious Markdown/HTML.
 - **User-confirmed fact — Failure handling:** Reject invalid input without data loss, show actionable errors, retain the previous reviewed draft, and never fabricate missing owners or dates.
-- **User-confirmed fact — Example inputs and outputs:** Input: Alice will ship search Friday. Output action: Ship search; owner Alice; due Friday; source span preserved.
+- **User-confirmed fact — Example inputs and outputs:** Input: Example User will ship search Friday. Output action: Ship search; owner Example User; due Friday; source span preserved.
 - **User-confirmed fact — Technical constraints:** TypeScript, deterministic rule-based extraction for MVP, local storage adapter, and no runtime network dependency.
 - **User-confirmed fact — User-declared immutable constraints:** Local-only processing, explicit source traceability, no accounts, and no autonomous actions in MVP.
 

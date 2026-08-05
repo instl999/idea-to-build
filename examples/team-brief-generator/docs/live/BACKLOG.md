@@ -2,14 +2,14 @@
 
 ## P0
 
-- Complete current-solution research.
-- Resolve readiness blockers.
+- For real use, replace the fictional research fixture with dated official evidence.
+- Begin implementation only after a real product owner reviews the synthetic baseline and creates an appropriate project-specific baseline.
 
 ## P1
 
-- Generate design documents after readiness.
-- Generate the Codex handoff after core freeze.
+- Complete each generated design scaffold in its owned task.
+- Execute the declared project tests and bind results to the current Git/worktree snapshot.
 
 ## Deferred
 
-None recorded.
+None recorded in the fixture.

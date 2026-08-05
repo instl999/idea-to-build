@@ -6,7 +6,7 @@
 2. Alternative and combined workflows, including no-code/low-code, general tools, scripts, templates, plugins, and human-in-the-loop processes.
 3. Reusable engineering foundations: official repositories, Agent Skills, MCP servers, SDKs, APIs, starter kits, components, databases, identity systems, deployment templates, and data sources.
 
-Search with user-language and English queries. Do not hard-code any vendor as the only option.
+Search with user-language and English queries. Before searching, minimize and pseudonymize unnecessary names, emails, organizations, repositories, domains, identifiers, and exact figures; never send secrets, personal records, or proprietary source text. Preserve dates and redacted queries. Do not hard-code any vendor as the only option.
 
 ## Required evidence fields
 

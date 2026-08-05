@@ -11,14 +11,19 @@ PLUGIN_REQUIRED = (
     "skills/idea-to-build/references/codex-orchestration.md", "skills/idea-to-build/references/git-policy.md",
     "skills/idea-to-build/references/security-policy.md", "skills/idea-to-build/assets/project-template/AGENTS.md",
     "hooks/hooks.json", "hooks/session_start.py", "hooks/user_prompt_submit.py", "hooks/pre_tool_use.py",
-    "hooks/post_tool_use.py", "hooks/stop_check.py", "README.md", "CHANGELOG.md", "LICENSE", "pyproject.toml",
+    "hooks/post_tool_use.py", "hooks/stop_check.py", "README.md", "README.zh-CN.md", "SECURITY.md", "SECURITY.zh-CN.md",
+    "CONTRIBUTING.md", "CONTRIBUTING.zh-CN.md", "docs/ARCHITECTURE.md", "docs/ARCHITECTURE.zh-CN.md",
+    "docs/PRIVACY.md", "docs/PRIVACY.zh-CN.md", "docs/CHANGE_CONTROL.md", "docs/CHANGE_CONTROL.zh-CN.md",
+    "CHANGELOG.md", "LICENSE", "pyproject.toml",
 )
 
 def validate_plugin(root):
     errors = ["Missing required plugin file: %s" % item for item in PLUGIN_REQUIRED if not (root / item).is_file()]
     try:
         manifest = load_json(root / ".codex-plugin" / "plugin.json")
-        if manifest.get("name") != root.name: errors.append("Plugin name must match root directory name")
+        plugin_name = manifest.get("name")
+        if not isinstance(plugin_name, str) or not re.fullmatch(r"[a-z0-9-]+", plugin_name): errors.append("Plugin name must be a lowercase kebab-case string")
+        elif not (root / "skills" / plugin_name).is_dir(): errors.append("Plugin name must match a directory under skills/")
         if manifest.get("skills") != "./skills/": errors.append("Manifest skills path must be ./skills/")
         if "hooks" in manifest: errors.append("Default hooks/hooks.json discovery should be used; omit manifest hooks for validator compatibility")
     except IdeaToBuildError as exc: errors.append(str(exc))

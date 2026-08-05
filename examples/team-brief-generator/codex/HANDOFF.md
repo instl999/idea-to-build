@@ -29,7 +29,7 @@ Frozen core hash: `409bf7fe207f8da0d0e50eff1f0c2ff16b1eb70720b89cfdabd2e742281e7
 - Goal: Implement validated note ingestion and deterministic parsing
 - Branch: `codex/01-input-and-parsing`
 - Worktree: `../team-brief-generator-01-input-and-parsing`
-- Writable ownership: `src/intake`
+- Writable ownership: `src/intake`, `src/shared`, `package.json`, `package-lock.json`, `tsconfig.json`
 - Inputs: AGENTS.md, frozen core, live status, risks, decisions, relevant ExecPlan
 - Outputs: scoped implementation or review evidence, a stable commit, and handoff summary
 - Dependencies: None
@@ -45,7 +45,7 @@ Frozen core hash: `409bf7fe207f8da0d0e50eff1f0c2ff16b1eb70720b89cfdabd2e742281e7
 - Writable ownership: `src/generation`
 - Inputs: AGENTS.md, frozen core, live status, risks, decisions, relevant ExecPlan
 - Outputs: scoped implementation or review evidence, a stable commit, and handoff summary
-- Dependencies: None
+- Dependencies: Input and parsing
 - Start condition: core verification passes and dependencies are available
 - Completion condition: tests pass, core remains valid, live updates are handed to Thread 0, and work is committed
 - Merge order: 2
@@ -58,7 +58,7 @@ Frozen core hash: `409bf7fe207f8da0d0e50eff1f0c2ff16b1eb70720b89cfdabd2e742281e7
 - Writable ownership: `src/export`
 - Inputs: AGENTS.md, frozen core, live status, risks, decisions, relevant ExecPlan
 - Outputs: scoped implementation or review evidence, a stable commit, and handoff summary
-- Dependencies: None
+- Dependencies: Input and parsing
 - Start condition: core verification passes and dependencies are available
 - Completion condition: tests pass, core remains valid, live updates are handed to Thread 0, and work is committed
 - Merge order: 3
@@ -71,7 +71,7 @@ Frozen core hash: `409bf7fe207f8da0d0e50eff1f0c2ff16b1eb70720b89cfdabd2e742281e7
 - Writable ownership: `ui`
 - Inputs: AGENTS.md, frozen core, live status, risks, decisions, relevant ExecPlan
 - Outputs: scoped implementation or review evidence, a stable commit, and handoff summary
-- Dependencies: None
+- Dependencies: Input and parsing
 - Start condition: core verification passes and dependencies are available
 - Completion condition: tests pass, core remains valid, live updates are handed to Thread 0, and work is committed
 - Merge order: 4

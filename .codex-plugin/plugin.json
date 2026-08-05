@@ -1,30 +1,34 @@
 {
-  "name": "idea-to-build",
-  "version": "0.1.0",
-  "description": "Validate a digital-product idea, research existing solutions, make a build decision, and prepare a protected Codex development handoff.",
-  "author": {
-    "name": "Idea-to-Build Contributors"
-  },
-  "license": "MIT",
-  "keywords": [
-    "product-discovery",
-    "requirements",
-    "architecture",
-    "codex-orchestration"
-  ],
-  "skills": "./skills/",
-  "interface": {
-    "displayName": "Idea-to-Build：需求验证与 Codex 开发编排器",
-    "shortDescription": "验证产品想法并生成受保护的 Codex 开发项目包",
-    "longDescription": "先检索并比较现成方案，再收集可验收需求、冻结经用户确认的核心约束，并生成带 Git、测试、工作树与文件所有权规则的 Codex 开发交接包。",
-    "developerName": "Idea-to-Build Contributors",
-    "category": "Productivity",
-    "capabilities": ["Research", "Read", "Write"],
-    "defaultPrompt": [
-      "$idea-to-build 我有一个应用想法，请先检索现成方案，再判断是否值得开发。",
-      "$idea-to-build 把这个模糊的软件需求整理成可开发、可验收的 Codex 项目。",
-      "$idea-to-build 评估已有方案，并为确认继续开发的产品生成 Codex 对话与工作树计划。"
-    ],
-    "brandColor": "#2563EB"
-  }
+    "name":  "idea-to-build",
+    "version":  "0.2.0",
+    "description":  "Validate a digital-product idea, research existing solutions, make a build decision, and prepare a protected Codex development handoff.",
+    "author":  {
+                   "name":  "Idea-to-Build Contributors"
+               },
+    "license":  "MIT",
+    "keywords":  [
+                     "product-discovery",
+                     "requirements",
+                     "architecture",
+                     "codex-orchestration"
+                 ],
+    "skills":  "./skills/",
+    "interface":  {
+                      "displayName":  "Idea-to-Build：需求验证与 Codex 开发编排器",
+                      "shortDescription":  "验证产品想法并生成受保护的 Codex 开发项目包",
+                      "longDescription":  "先检索并比较现成方案，再收集可验收需求、冻结经用户确认的核心约束，并生成带 Git、测试、工作树与文件所有权规则的 Codex 开发交接包。",
+                      "developerName":  "Idea-to-Build Contributors",
+                      "category":  "Productivity",
+                      "capabilities":  [
+                                           "Research",
+                                           "Read",
+                                           "Write"
+                                       ],
+                      "defaultPrompt":  [
+                                            "$idea-to-build 我有一个应用想法，请先检索现成方案，再判断是否值得开发。",
+                                            "$idea-to-build 把这个模糊的软件需求整理成可开发、可验收的 Codex 项目。",
+                                            "$idea-to-build 评估已有方案，并为确认继续开发的产品生成 Codex 对话与工作树计划。"
+                                        ],
+                      "brandColor":  "#2563EB"
+                  }
 }

@@ -47,7 +47,7 @@ Shared integration files must be proposed in the handoff and merged by Thread 0.
 
 ## Acceptance and test commands
 
-- `python -m unittest discover -s tests -v`
+- `npm test`
 - `python scripts/verify_core.py --path .`
 - `python scripts/verify_core.py --path .`
 

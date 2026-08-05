@@ -40,7 +40,7 @@ Shared integration files must be proposed in the handoff and merged by Thread 0.
 
 - Must complete: Build traceable brief generation and editing state
 - Must not complete: unrelated workstreams or a core-contract change.
-- Dependencies: None
+- Dependencies: Input and parsing
 - Before adding a production dependency, explain necessity, maintenance, license, security, privacy, deployment fit, lock-in, and replacement options.
 - Preserve the API, open-source, and acceptance constraints in the frozen documents.
 

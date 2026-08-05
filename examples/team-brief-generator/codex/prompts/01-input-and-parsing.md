@@ -29,6 +29,10 @@ You own only this workstream: Implement validated note ingestion and determinist
 
 Writable:
 - `src/intake`
+- `src/shared`
+- `package.json`
+- `package-lock.json`
+- `tsconfig.json`
 
 Read-only: `AGENTS.md`, live documents not assigned here, and other threads' owned paths.
 

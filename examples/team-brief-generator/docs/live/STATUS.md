@@ -1,7 +1,8 @@
 # Status
 
 - Phase: CODEX_HANDOFF_READY
-- Core: frozen and verified
-- Current milestone: begin development from the generated handoff
-- Blockers: none in this worked example
-- Last validation: package, core hash, and generated handoff verified
+- Core: frozen fixture and hash verified
+- Current milestone: handoff ready
+- Blockers: real-world research and human review are required before investment or implementation
+- Last validation: package, core hash, shared-file ownership, design scaffolds, and seven-task handoff verified
+- Data classification: entirely synthetic test fixture

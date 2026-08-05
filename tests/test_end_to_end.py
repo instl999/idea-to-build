@@ -8,7 +8,7 @@ class EndToEndTests(unittest.TestCase):
             self.assertFalse((fx.root / ".idea-to-build/core.lock.json").exists())
             readiness = fx.make_ready(); self.assertTrue(readiness["ready"])
             state = itb.load_state(fx.root); state["current_phase"] = "REQUIREMENTS_READY"; state["workstreams"] = [{"name": "Application", "goal": "Build the brief generator", "files": ["src"]}]; itb.save_state(fx.root, state)
-            itb.confirm_core(fx.root, "Approved: freeze and build this core")
+            itb.confirm_core(fx.root, "I confirm and freeze this core preview")
             frozen = itb.freeze_core(fx.root, commit=False, readonly=False); self.assertTrue(frozen["ok"])
             handoff = itb.generate_handoff(fx.root); self.assertEqual(handoff["thread_count"], 3)
             self.assertTrue(itb.verify_core(fx.root)["ok"]); self.assertTrue(itb.render_context(fx.root)["ok"])

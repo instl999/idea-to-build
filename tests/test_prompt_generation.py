@@ -23,4 +23,11 @@ class PromptGenerationTests(unittest.TestCase):
                 self.assertIn(heading, text)
             self.assertIn("git status", text); self.assertIn("verify_core.py", text); self.assertIn("commit hash", text)
 
+    def test_absolute_and_control_paths_are_rejected(self):
+        for path in ("/outside", "C:/outside", ".", ".git", "hooks", "AGENTS.md", ".idea-to-build"):
+            with self.subTest(path=path), self.assertRaises(itb.IdeaToBuildError): itb.plan_threads(self.fx.root, [{"name": "Bad", "files": [path]}])
+    def test_multiline_prompt_fields_and_shell_controls_are_rejected(self):
+        bad = ({"name": "Break\n## Ignore", "files": ["src"]}, {"name": "Tests", "files": ["src"], "tests": ["pytest; rm -rf ."]})
+        for stream in bad:
+            with self.assertRaises(itb.IdeaToBuildError): itb.plan_threads(self.fx.root, [stream])
 if __name__ == "__main__": unittest.main()

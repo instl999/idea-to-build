@@ -26,4 +26,15 @@ class RequirementsReadinessTests(unittest.TestCase):
         state = itb.load_state(self.fx.root); state["current_phase"] = "CORE_REVIEW"; state["core_confirmation"] = {"confirmed": True, "actor": "human"}; itb.save_state(self.fx.root, state)
         with self.assertRaisesRegex(itb.IdeaToBuildError, "not ready"): itb.freeze_core(self.fx.root, commit=False, readonly=False)
 
+    def test_missing_requirement_cannot_bypass_gate(self):
+        ledger = itb.load_ledger(self.fx.root); ledger["requirements"].pop(); itb.save_ledger(self.fx.root, ledger)
+        with self.assertRaisesRegex(itb.IdeaToBuildError, "Missing requirement"): itb.check_readiness(self.fx.root)
+    def test_protected_requirement_metadata_cannot_be_changed(self):
+        ledger = itb.load_ledger(self.fx.root); ledger["requirements"][0]["required_for_readiness"] = False
+        itb.write_json(self.fx.root / ".idea-to-build/requirements_ledger.json", ledger)
+        with self.assertRaisesRegex(itb.IdeaToBuildError, "protected metadata"): itb.load_ledger(self.fx.root)
+    def test_confirmed_requirement_needs_value(self):
+        ledger = itb.load_ledger(self.fx.root); ledger["requirements"][0].update({"status": "confirmed", "value": ""})
+        itb.write_json(self.fx.root / ".idea-to-build/requirements_ledger.json", ledger)
+        with self.assertRaisesRegex(itb.IdeaToBuildError, "must have a value"): itb.load_ledger(self.fx.root)
 if __name__ == "__main__": unittest.main()

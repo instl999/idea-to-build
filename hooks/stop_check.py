@@ -9,19 +9,22 @@ def main():
     if root is None or event.get("stop_hook_active"): return
     try:
         runtime = load_runtime(root); state = runtime.load_state(root)
-        if state.get("core_frozen"):
+        lock_path = runtime.safe_project_path(root, ".idea-to-build/core.lock.json")
+        if lock_path.is_file():
             verification = runtime.verify_core(root)
             if not verification["ok"]: emit(block_payload("Stop", "; ".join(verification["mismatches"]))); return
         if state.get("current_phase") not in ("CODEX_HANDOFF_READY", "DEVELOPMENT_ACTIVE", "RELEASE_READY", "CHANGE_REQUESTED"): return
         changes = git_changes(root)
+        if changes is None: emit(block_payload("Stop", "Git status failed; completion cannot be verified")); return
         if not changes: return
         issues = []
-        record = root / ".idea-to-build" / "last_test.json"
+        record = runtime.safe_project_path(root, ".idea-to-build/last_test.json")
         if not record.is_file(): issues.append("No test result is recorded; run the project tests and record the result")
         else:
             try:
                 payload = json.loads(record.read_text(encoding="utf-8"))
-                if payload.get("status") != "passed": issues.append("The latest recorded test result is not passing")
+                if payload.get("status") != "passed" or payload.get("exit_code") != 0: issues.append("The latest recorded test result is not passing")
+                elif payload.get("git") != runtime.git_snapshot(root): issues.append("The passing test record is stale for the current Git/worktree snapshot")
             except (OSError, json.JSONDecodeError): issues.append("The recorded test result is unreadable")
         normalized = [line[3:].replace("\\", "/") if len(line) > 3 else line for line in changes]
         if "docs/live/STATUS.md" not in normalized: issues.append("docs/live/STATUS.md is not updated for the substantive changes")

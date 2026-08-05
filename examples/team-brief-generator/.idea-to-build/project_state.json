@@ -4,9 +4,9 @@
   "project_name": "Team Brief Generator",
   "current_phase": "CODEX_HANDOFF_READY",
   "created_at": "2026-08-05T05:05:18Z",
-  "updated_at": "2026-08-05T05:05:19Z",
+  "updated_at": "2026-08-05T11:03:22Z",
   "user_language": "en",
-  "search_status": "COMPLETED",
+  "search_status": "COMPLETE",
   "research_decision": "BUILD_CUSTOM",
   "build_decision": "BUILD_CUSTOM",
   "requirements_readiness": "READY",
@@ -52,14 +52,18 @@
     "docs/design/USER_STORIES.md"
   ],
   "planned_codex_threads": 7,
-  "current_milestone": "Freeze the approved MVP contract",
-  "last_verified_commit": "3f20ff40af114f482e9275f26a5c934a930f2e87",
+  "current_milestone": "Handoff",
+  "last_verified_commit": null,
   "workstreams": [
     {
       "name": "Input and parsing",
       "goal": "Implement validated note ingestion and deterministic parsing",
       "files": [
-        "src/intake"
+        "src/intake",
+        "src/shared",
+        "package.json",
+        "package-lock.json",
+        "tsconfig.json"
       ],
       "tests": [
         "npm test -- intake"
@@ -73,6 +77,9 @@
       ],
       "tests": [
         "npm test -- generation"
+      ],
+      "dependencies": [
+        "Input and parsing"
       ]
     },
     {
@@ -83,6 +90,9 @@
       ],
       "tests": [
         "npm test -- export"
+      ],
+      "dependencies": [
+        "Input and parsing"
       ]
     },
     {
@@ -93,8 +103,13 @@
       ],
       "tests": [
         "npm test -- ui"
+      ],
+      "dependencies": [
+        "Input and parsing"
       ]
     }
   ],
-  "test_commands": []
+  "test_commands": [
+    "npm test"
+  ]
 }

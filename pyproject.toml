@@ -1,6 +1,6 @@
 [project]
 name = "idea-to-build-codex-plugin"
-version = "0.1.0"
+version = "0.2.0"
 description = "Tests and tooling for the Idea-to-Build Codex plugin"
 requires-python = ">=3.9"
 license = { text = "MIT" }

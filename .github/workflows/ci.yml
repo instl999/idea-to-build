@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.9", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Unit and integration tests
+        run: python -m unittest discover -s tests -v
+      - name: Compile Python sources
+        run: python -m compileall -q hooks skills/idea-to-build/scripts tests scripts
+      - name: Validate plugin package
+        run: python skills/idea-to-build/scripts/validate_package.py --path .
+      - name: Verify frozen example
+        run: python examples/team-brief-generator/scripts/verify_core.py --path examples/team-brief-generator
+      - name: Audit publishable content and history
+        run: python scripts/audit_public_release.py

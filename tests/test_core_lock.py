@@ -21,4 +21,14 @@ class CoreLockTests(unittest.TestCase):
         self.fx.make_ready(); state = itb.load_state(self.fx.root); state["current_phase"] = "CORE_REVIEW"; state["core_confirmation"] = {"confirmed": True, "actor": "ai"}; itb.save_state(self.fx.root, state)
         with self.assertRaisesRegex(itb.IdeaToBuildError, "human"): itb.freeze_core(self.fx.root, commit=False, readonly=False)
 
+    def test_negated_confirmation_is_rejected(self):
+        self.fx.make_ready(); state = itb.load_state(self.fx.root); state["current_phase"] = "REQUIREMENTS_READY"; itb.save_state(self.fx.root, state)
+        for statement in ("do not confirm freeze", "unconfirmed freeze", "不要冻结", "未确认冻结"):
+            with self.subTest(statement=statement), self.assertRaises(itb.IdeaToBuildError): itb.confirm_core(self.fx.root, statement)
+    def test_parent_git_root_is_rejected_before_freeze_mutation(self):
+        self.fx.make_ready(); state = itb.load_state(self.fx.root); state["current_phase"] = "REQUIREMENTS_READY"; itb.save_state(self.fx.root, state)
+        itb.confirm_core(self.fx.root, "I confirm and freeze this core preview")
+        with self.assertRaisesRegex(itb.IdeaToBuildError, "parent Git root"): itb.freeze_core(self.fx.root, commit=True, readonly=False)
+        self.assertFalse((self.fx.root / ".idea-to-build/core.lock.json").exists())
+        self.assertFalse(itb.load_state(self.fx.root)["core_frozen"])
 if __name__ == "__main__": unittest.main()

@@ -394,7 +394,7 @@
       "reversible": true,
       "required_for_readiness": false,
       "status": "confirmed",
-      "value": "Input: Alice will ship search Friday. Output action: Ship search; owner Alice; due Friday; source span preserved.",
+      "value": "Input: Example User will ship search Friday. Output action: Ship search; owner Example User; due Friday; source span preserved.",
       "accepted": true,
       "notes": "Confirmed in the worked example."
     },

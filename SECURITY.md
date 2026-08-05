@@ -1,0 +1,29 @@
+# Security Policy
+
+**English** | [简体中文](SECURITY.zh-CN.md)
+
+## Supported versions
+
+Security fixes are provided for the latest released version only. Version 0.2.0 is currently supported.
+
+## Report a vulnerability
+
+Do not open a public issue containing exploit details, tokens, personal data, or an unpublished vulnerability. Use the repository's GitHub **Security → Report a vulnerability** private advisory flow. Include affected version/commit, environment, reproduction steps, impact, and a minimal redacted proof. If private advisories are unavailable, open a public issue requesting a private contact channel without vulnerability details.
+
+Maintainers should acknowledge a report within seven days, validate and triage it, coordinate a fix and disclosure date, and credit the reporter if requested. No bounty is promised.
+
+## Security model
+
+The plugin has no MCP server, remote backend, authentication, or bundled credentials. Local scripts run with the user's filesystem and Git permissions. Live research is performed by the host's Web Search and can transmit query text to the host/search provider.
+
+Frozen-core integrity is based on an exact project Git root, SHA-256 hashes, a lock file, review, and Git history. Read-only bits and Hooks are secondary controls. Hooks can detect and block many direct operations, but cannot authenticate a human, undo an already executed mutation, or observe every external editor/process/tool. Treat generated prompts and research inputs as untrusted data.
+
+## Maintainer release checklist
+
+- Review the complete diff and dependency surface.
+- Run all tests, compilation, package validation, frozen-example verification, and `scripts/audit_public_release.py`.
+- Confirm all commit author/committer emails are approved no-reply addresses.
+- Enable GitHub secret scanning, push protection, protected default branch, and required CI when the host plan supports them.
+- Never weaken a failing guardrail merely to make a release pass.
+
+See [Privacy](docs/PRIVACY.md), [Architecture](docs/ARCHITECTURE.md), and [Change Control](docs/CHANGE_CONTROL.md).

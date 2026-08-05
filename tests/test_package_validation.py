@@ -7,9 +7,8 @@ spec = importlib.util.spec_from_file_location("package_validator", str(ROOT / "s
 class PackageValidationTests(unittest.TestCase):
     def test_plugin_package_is_valid(self):
         result = validator.validate_plugin(ROOT)
-        filtered = [item for item in result["errors"] if "README.md" not in item]
-        self.assertEqual(filtered, [])
-    def test_manifest_name_matches_root(self):
+        self.assertEqual(result["errors"], [])
+    def test_manifest_name_matches_skill_directory(self):
         result = validator.validate_plugin(ROOT); self.assertFalse(any("name must match" in item for item in result["errors"]))
 
 if __name__ == "__main__": unittest.main()
