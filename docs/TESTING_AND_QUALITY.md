@@ -21,8 +21,9 @@
 | 端到端 | `test_end_to_end.py` | 初始化 → readiness → 冻结 → 文档/handoff → 包校验 |
 | 安全/包 | `test_initialization_safety.py`、`test_package_validation.py`、`test_activation_cases.py` | 预检、链接路径、完整运行时与 .gitignore 复制、清单/版本/必需文件、MCP 阶段顺序/缺失协议反例、激活正反例 |
 | 安全/发布 | `test_release_audit.py` | 官方/测试 no-reply 地址允许，以及个人邮箱和相似域名拒绝 |
+| 测试基础设施 | `test_fixture_cleanup.py` | 临时目录清理的瞬态重试、重试耗尽和非瞬态错误传播 |
 
-PR 基线加入发布审计回归后的隔离验证共发现 119 个测试：118 个通过，1 个 Windows 目录 symlink 场景因系统能力跳过。若测试数量发生变化，必须更新本段和 `PROJECT_STATUS.md`。
+PR 基线加入发布审计与夹具清理回归后的隔离验证共发现 122 个测试：121 个通过，1 个 Windows 目录 symlink 场景因系统能力跳过。若测试数量发生变化，必须更新本段和 `PROJECT_STATUS.md`。
 
 ## 静态和包级检查
 

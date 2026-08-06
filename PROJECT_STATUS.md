@@ -6,7 +6,7 @@
 
 ## 当前阶段
 
-仓库中的 0.4.0 功能、文档与本次审查加固已经完成，发布路径为 `agent/task-ledger-hardening` 分支和 GitHub 草稿 PR。PR 1 的首次 `pull_request` CI 因 GitHub 合成 merge commit 使用精确 `noreply@github.com` 而被历史脱敏审计误报；该问题已通过精确地址白名单和相似域名拒绝回归测试修复。后续 push CI 暴露测试夹具递归预遍历清理临时 Git 目录时的 TOCTOU 竞态；清理现改由 `shutil.rmtree` 直接执行，并只对只读权限及已经消失的路径恢复。该版本在原有 Idea-to-Build 研究、38 项需求门禁、人工确认与冻结、Codex handoff 和 worktree 调度基础上，新增面向长期开发的四层仓库记忆、规范任务生命周期、质量门禁记录、可恢复提示词和增量迁移。
+仓库中的 0.4.0 功能、文档与本次审查加固已经完成，发布路径为 `agent/task-ledger-hardening` 分支和 GitHub 草稿 PR。PR 1 的首次 `pull_request` CI 因 GitHub 合成 merge commit 使用精确 `noreply@github.com` 而被历史脱敏审计误报；该问题已通过精确地址白名单和相似域名拒绝回归测试修复。后续 push CI 暴露测试夹具递归预遍历清理临时 Git 目录时的 TOCTOU 竞态；清理现改由 `shutil.rmtree` 直接执行：只读权限和已经消失的路径按预期恢复，`ENOTEMPTY`/`EEXIST` 仅做短时有界重试，持续失败和其他 I/O 错误继续抛出。该版本在原有 Idea-to-Build 研究、38 项需求门禁、人工确认与冻结、Codex handoff 和 worktree 调度基础上，新增面向长期开发的四层仓库记忆、规范任务生命周期、质量门禁记录、可恢复提示词和增量迁移。
 
 Plugin 仍然只面向 Codex Desktop/CLI；不支持 OpenClaw、通用 SkillHub 或 Claude Code。运行时保持 Python 3.9+ 标准库和 Git，无数据库、认证、公共 HTTP API、MCP server、托管后端或第三方 Python 依赖。
 
@@ -38,7 +38,7 @@ Plugin 仍然只面向 Codex Desktop/CLI；不支持 OpenClaw、通用 SkillHub 
 
 2026-08-06 在 Windows 本地完成：
 
-- `python -m unittest discover -s tests -v`：PR 基线加入发布审计回归后为 119 项，Windows 隔离验证 118 通过、1 项因目录符号链接能力不可用而跳过，0 失败。
+- `python -m unittest discover -s tests -v`：PR 基线加入发布审计与夹具清理回归后为 122 项，Windows 隔离验证 121 通过、1 项因目录符号链接能力不可用而跳过，0 失败。
 - `python -m compileall -q hooks skills/idea-to-build/scripts tests scripts`：通过。
 - `python skills/idea-to-build/scripts/validate_package.py --path .`：通过。
 - `python examples/team-brief-generator/scripts/verify_core.py --path examples/team-brief-generator`：通过，冻结 hash 为 `409bf7fe207f8da0d0e50eff1f0c2ff16b1eb70720b89cfdabd2e742281e7b73`。
