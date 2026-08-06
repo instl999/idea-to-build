@@ -44,6 +44,8 @@ PLAN 记录步骤、路径/模块、文件所有权、依赖、迁移、测试�
 
 状态包括 `backlog`、`ready`、`in_progress`、`blocked`、`review`、`done`、`cancelled`。状态转换显式定义并失败关闭。依赖和阻塞项必须解决后才能开始；顺序模式只允许一个活动任务；并行模式要求非空且互不重叠的所有权；完成需要当前质量证据；重新打开已完成任务必须给出原因。
 
+持久化前，runtime 会深拷贝并完整校验整个候选台账。因此，无效任务创建不会生成 SPEC/PLAN 文件，被拒绝的阻塞转换也不会写入 `blocked_by` 或状态变化。`project_state.json.planned_tasks` 是从规范非终态任务同步的派生列表。台账、state 与 Markdown 写入不是一个跨文件事务；如果后续投影写入失败，可从 JSON 事实源运行 `task_state.py sync-docs --path .` 重建。
+
 台账完全本地工作，不依赖 GitHub Issues、Linear、Jira、登录或网络；`external_ref` 只是可选同步信息。
 
 ## 第四层：质量证据

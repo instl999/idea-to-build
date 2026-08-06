@@ -78,4 +78,54 @@ class RepositoryMemoryTests(unittest.TestCase):
         itb.sync_tasks_document(self.fx.root)
         self.assertEqual(path.read_bytes(), first)
 
+    def test_invalid_task_save_does_not_corrupt_canonical_ledger(self):
+        path = self.fx.root / itb.TASKS_FILE
+        state_path = self.fx.root / ".idea-to-build/project_state.json"
+        projection_path = self.fx.root / "docs/live/TASKS.md"
+        before = (path.read_bytes(), state_path.read_bytes(), projection_path.read_bytes())
+        payload = itb.load_tasks(self.fx.root)
+        original_updated_at = payload["updated_at"]
+        payload["tasks"][0]["dependencies"] = ["TASK-9999"]
+        with self.assertRaisesRegex(itb.IdeaToBuildError, "unknown tasks"):
+            itb.save_tasks(self.fx.root, payload)
+        self.assertEqual(payload["updated_at"], original_updated_at)
+        self.assertEqual((path.read_bytes(), state_path.read_bytes(), projection_path.read_bytes()), before)
+
+    def test_invalid_task_creation_leaves_no_partial_spec_or_state(self):
+        before = (self.fx.root / itb.TASKS_FILE).read_bytes()
+        with self.assertRaisesRegex(itb.IdeaToBuildError, "unknown tasks"):
+            itb.create_task(self.fx.root, "TASK-0002", "Invalid dependency", dependencies=["TASK-9999"])
+        self.assertEqual((self.fx.root / itb.TASKS_FILE).read_bytes(), before)
+        self.assertFalse((self.fx.root / "specs/TASK-0002").exists())
+        self.assertNotIn("TASK-0002", itb.load_state(self.fx.root)["planned_tasks"])
+
+    def test_task_save_synchronizes_planned_tasks_projection(self):
+        task = itb.create_task(self.fx.root, "TASK-0002", "Projected task")
+        self.assertIn(task["id"], itb.load_state(self.fx.root)["planned_tasks"])
+        payload = itb.load_tasks(self.fx.root)
+        next(item for item in payload["tasks"] if item["id"] == task["id"])["status"] = "cancelled"
+        itb.save_tasks(self.fx.root, payload)
+        self.assertNotIn(task["id"], itb.load_state(self.fx.root)["planned_tasks"])
+
+    def test_invalid_block_transition_does_not_persist_blockers(self):
+        second = itb.create_task(self.fx.root, "TASK-0002", "Invalid blocker")
+        payload = itb.load_tasks(self.fx.root)
+        payload["tasks"][0]["status"] = "cancelled"
+        itb.save_tasks(self.fx.root, payload)
+        before = (self.fx.root / itb.TASKS_FILE).read_bytes()
+        with self.assertRaisesRegex(itb.IdeaToBuildError, "cancelled -> blocked"):
+            itb.block_task(self.fx.root, "TASK-0001", [second["id"]], "Cannot run")
+        self.assertEqual((self.fx.root / itb.TASKS_FILE).read_bytes(), before)
+        self.assertEqual(itb.get_task(self.fx.root, "TASK-0001")["blocked_by"], [])
+
+    def test_block_transition_updates_task_and_current_state(self):
+        first = itb.get_task(self.fx.root, "TASK-0001"); make_spec_concrete(self.fx.root, first)
+        itb.transition_task(self.fx.root, first["id"], "ready"); itb.transition_task(self.fx.root, first["id"], "in_progress")
+        second = itb.create_task(self.fx.root, "TASK-0002", "External blocker")
+        blocked = itb.block_task(self.fx.root, first["id"], [second["id"]], "Waiting for dependency")
+        self.assertEqual(blocked["status"], "blocked")
+        self.assertEqual(blocked["blocked_by"], [second["id"]])
+        self.assertIsNone(itb.load_state(self.fx.root)["current_task_id"])
+
+
 if __name__ == "__main__": unittest.main()

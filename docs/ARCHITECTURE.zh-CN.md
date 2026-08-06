@@ -117,7 +117,7 @@ sequenceDiagram
 
 ## 仓库记忆架构（0.4）
 
-核心冻结后，runtime 增加四个协调层：受保护规则/核心、逐任务 SPEC/PLAN、规范 `.idea-to-build/tasks.json`、以及带当前快照证据的显式质量门禁。`docs/live/TASKS.md` 从 JSON 生成，永远不是第二状态源。`render_context()` 只选择一个任务并输出有上限、带数据边界的摘要；并行模式拒绝猜测。Stop 对纯记忆维护走轻量路径，对实质修改走任务感知路径。
+核心冻结后，runtime 增加四个协调层：受保护规则/核心、逐任务 SPEC/PLAN、规范 `.idea-to-build/tasks.json`、以及带当前快照证据的显式质量门禁。`docs/live/TASKS.md` 从 JSON 生成，永远不是第二状态源。任务写入会深拷贝并完整校验候选台账后再替换 JSON；创建和阻塞操作会在持久化修改前校验完整候选变更，并从非终态任务重新同步 `project_state.json.planned_tasks`。这些保护不会把台账、项目状态和 Markdown 投影变成一个跨文件事务；JSON 仍是规范事实源，投影可以重建。`render_context()` 只选择一个任务并输出有上限、带数据边界的摘要；并行模式拒绝猜测。Stop 对纯记忆维护走轻量路径，对实质修改走任务感知路径。
 
 `guided_sequential` 只规划一个根任务，不强制 worktree。`parallel_worktrees` 只从规范 ready 任务、依赖波次和互不重叠的所有权生成子任务。handoff 和 dispatch 把每个子任务绑定到任务 ID、SPEC、PLAN、质量门禁、提示词 hash、分支、worktree 和可写路径。
 

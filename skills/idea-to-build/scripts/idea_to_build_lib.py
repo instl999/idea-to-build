@@ -1,5 +1,6 @@
 """Standard-library runtime for the Idea-to-Build Codex plugin."""
 from __future__ import print_function
+import copy
 import hashlib
 import json
 import os
@@ -1196,8 +1197,8 @@ def load_quality_gates(root):
     return payload
 
 
-def load_tasks(root):
-    payload = ensure_supported_schema(load_json(safe_project_path(root, TASKS_FILE)), "task ledger"); tasks = payload.get("tasks")
+def _validate_tasks_payload(root, payload):
+    payload = ensure_supported_schema(payload, "task ledger"); tasks = payload.get("tasks")
     if not isinstance(tasks, list): raise IdeaToBuildError("task ledger must contain a tasks array")
     gates = {gate["id"] for gate in load_quality_gates(root)["gates"]}; seen = set()
     for task in tasks:
@@ -1228,8 +1229,17 @@ def load_tasks(root):
     return payload
 
 
-def save_tasks(root, payload, sync_docs=True):
-    ensure_supported_schema(payload, "task ledger"); payload["updated_at"] = utc_now(); write_project_json(root, TASKS_FILE, payload); validated = load_tasks(root)
+def load_tasks(root):
+    return _validate_tasks_payload(root, load_json(safe_project_path(root, TASKS_FILE)))
+
+
+def save_tasks(root, payload, sync_docs=True, sync_state=True):
+    candidate = copy.deepcopy(payload); candidate["updated_at"] = utc_now(); validated = _validate_tasks_payload(root, candidate)
+    state = load_state(root) if sync_state else None
+    write_project_json(root, TASKS_FILE, validated)
+    if state is not None:
+        state["planned_tasks"] = [item["id"] for item in validated["tasks"] if item["status"] not in ("done", "cancelled")]
+        save_state(root, state)
     if sync_docs: sync_tasks_document(root, validated)
     return validated
 
@@ -1372,10 +1382,12 @@ def create_task(root, task_id, title, priority="P1", owned_paths=None, dependenc
     title = validate_single_line("task title", title, 200); now = utc_now(); folder = "specs/%s" % task_id
     spec_path, plan_path = folder + "/SPEC.md", folder + "/PLAN.md"; spec_file, plan_file = safe_project_path(root, spec_path), safe_project_path(root, plan_path)
     if spec_file.exists() or plan_file.exists(): raise IdeaToBuildError("Task spec directory already contains managed files: %s" % folder)
-    spec, plan = _task_template(task_id, title); spec_file.parent.mkdir(parents=True, exist_ok=True); spec_file.write_text(spec, encoding="utf-8"); plan_file.write_text(plan, encoding="utf-8")
+    spec, plan = _task_template(task_id, title)
     required = quality_gates if quality_gates is not None else [gate["id"] for gate in load_quality_gates(root)["gates"] if gate.get("required")]
     task = {"id": task_id, "title": title, "status": "backlog", "priority": priority, "spec_path": spec_path, "plan_path": plan_path, "dependencies": dependencies or [], "blocked_by": [], "branch": None, "worktree": None, "owned_paths": owned_paths or [], "required_quality_gates": required, "latest_commit": None, "created_at": now, "updated_at": now, "external_ref": None, "notes": []}
-    payload["tasks"].append(task); save_tasks(root, payload); return task
+    payload["tasks"].append(task); _validate_tasks_payload(root, copy.deepcopy(payload))
+    spec_file.parent.mkdir(parents=True, exist_ok=True); spec_file.write_text(spec, encoding="utf-8"); plan_file.write_text(plan, encoding="utf-8")
+    save_tasks(root, payload); return get_task(root, task_id)
 
 
 def get_task(root, task_id):
@@ -1448,8 +1460,9 @@ def transition_task(root, task_id, target, reason=None):
         if state.get("current_task_id") == task_id: state["current_task_id"] = None
     elif target in ("blocked", "cancelled") and state.get("current_task_id") == task_id: state["current_task_id"] = None
     if reason: task.setdefault("notes", []).append("%s: %s" % (utc_now(), validate_single_line("task transition reason", reason, 1000)))
-    task["status"] = target; task["updated_at"] = utc_now(); save_tasks(root, payload)
-    state["planned_tasks"] = [item["id"] for item in payload["tasks"] if item["status"] not in ("done", "cancelled")]; save_state(root, state); return task
+    task["status"] = target; task["updated_at"] = utc_now(); validated = save_tasks(root, payload, sync_docs=False, sync_state=False)
+    state["planned_tasks"] = [item["id"] for item in validated["tasks"] if item["status"] not in ("done", "cancelled")]; save_state(root, state)
+    sync_tasks_document(root, validated); return next(item for item in validated["tasks"] if item["id"] == task_id)
 
 
 def reopen_task(root, task_id, reason):
@@ -1459,7 +1472,17 @@ def reopen_task(root, task_id, reason):
 def block_task(root, task_id, blocked_by=None, reason=None):
     payload = load_tasks(root); task_id = _task_id(task_id); task = next((item for item in payload["tasks"] if item["id"] == task_id), None)
     if task is None: raise IdeaToBuildError("Unknown task: %s" % task_id)
-    task["blocked_by"] = [_task_id(value) for value in (blocked_by or [])]; save_tasks(root, payload); return transition_task(root, task_id, "blocked", reason or "Blocked")
+    current = task["status"]
+    if current != "blocked" and "blocked" not in TASK_TRANSITIONS[current]: raise IdeaToBuildError("Unsupported task transition: %s -> blocked" % current)
+    blockers = [_task_id(value) for value in (blocked_by or [])]; known = {item["id"] for item in payload["tasks"]}; unknown = set(blockers) - known
+    if unknown: raise IdeaToBuildError("Task %s references unknown tasks: %s" % (task_id, ", ".join(sorted(unknown))))
+    if task_id in blockers: raise IdeaToBuildError("Task cannot depend on or block itself: %s" % task_id)
+    reason = validate_single_line("task transition reason", reason or "Blocked", 1000); state = load_state(root)
+    task["blocked_by"] = blockers; task["status"] = "blocked"; task["updated_at"] = utc_now(); task.setdefault("notes", []).append("%s: %s" % (utc_now(), reason))
+    if state.get("current_task_id") == task_id: state["current_task_id"] = None
+    validated = save_tasks(root, payload, sync_docs=False, sync_state=False)
+    state["planned_tasks"] = [item["id"] for item in validated["tasks"] if item["status"] not in ("done", "cancelled")]; save_state(root, state)
+    sync_tasks_document(root, validated); return next(item for item in validated["tasks"] if item["id"] == task_id)
 
 
 def _redact_output(value, limit=4000):

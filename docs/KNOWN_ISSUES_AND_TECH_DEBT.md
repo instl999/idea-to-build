@@ -129,6 +129,7 @@
 - **K-016**：Plugin 必需清单现覆盖 marketplace、Hook helper、完整 CLI、发布脚本、CI 与项目记忆；生成项目校验复用统一 10 脚本清单并有缺文件反例。22 份设计文档的内容级完整性仍未强制。
 - **K-017**：模板和冻结示例加入 `.gitignore`，默认忽略测试/guardrail、本地虚拟环境、Python 缓存和 `.env*`，并保留 `.env.example`。既有项目与已跟踪历史不自动迁移。
 - **K-019**：Stop Hook 已增加当前快照通过、缺记录、伪造记录和 `stop_hook_active` 测试；stale、STATUS 缺失、非开发阶段和真实宿主事件仍可扩展。
+- **K-023**：任务保存已改为在写入前深拷贝并完整校验候选台账；任务创建在生成 SPEC/PLAN 前预检，阻塞转换在持久化前校验状态、阻塞 ID、自引用与原因并一次保存，`planned_tasks` 与非终态任务同步。JSON、state 与 Markdown 仍不是跨文件事务，恢复边界继续见 K-022。
 
 ### K-021：质量证据和人工 actor 仍是流程性证明
 

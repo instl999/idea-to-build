@@ -1,12 +1,12 @@
 # 项目状态
 
 更新时间：2026-08-06（Asia/Shanghai）
-代码基线：本地 `main`；0.4.0 变更尚未推送到 `origin/main`
+代码基线：`agent/task-ledger-hardening`（从本地 `main` 创建）；0.4.0 与本次审查加固通过分支和草稿 PR 发布，不直接改写 `origin/main`
 最新已知发布标签：`v0.2.0`
 
 ## 当前阶段
 
-仓库中的 0.4.0 功能实现与文档已经完成，正在等待本地提交。该版本在原有 Idea-to-Build 研究、38 项需求门禁、人工确认与冻结、Codex handoff 和 worktree 调度基础上，新增面向长期开发的四层仓库记忆、规范任务生命周期、质量门禁记录、可恢复提示词和增量迁移。
+仓库中的 0.4.0 功能、文档与本次审查加固已经完成，发布路径为 `agent/task-ledger-hardening` 分支和 GitHub 草稿 PR。该版本在原有 Idea-to-Build 研究、38 项需求门禁、人工确认与冻结、Codex handoff 和 worktree 调度基础上，新增面向长期开发的四层仓库记忆、规范任务生命周期、质量门禁记录、可恢复提示词和增量迁移。
 
 Plugin 仍然只面向 Codex Desktop/CLI；不支持 OpenClaw、通用 SkillHub 或 Claude Code。运行时保持 Python 3.9+ 标准库和 Git，无数据库、认证、公共 HTTP API、MCP server、托管后端或第三方 Python 依赖。
 
@@ -17,6 +17,7 @@ Plugin 仍然只面向 Codex Desktop/CLI；不支持 OpenClaw、通用 SkillHub 
 - 第三层“执行与质量记忆”：`.idea-to-build/quality_gates.json` 定义门禁，忽略提交的 `last_quality.json` 记录当前快照结果；命令门禁和人工验收分离。
 - 第四层“可恢复提示词”：启动、恢复、收尾以及规则、规格、任务、质量和全局审计提示词，按项目语言输出并限定读取范围。
 - 任务状态机：`draft → ready → in_progress → review → done`，支持阻塞、重开、依赖、路径所有权和具体验收标准校验。
+- 任务保存会先深拷贝并完整校验候选台账，再原子替换 JSON；`planned_tasks` 与规范台账同步，失败的创建或阻塞转换不会留下已知的半写入状态。
 - 默认 `guided_sequential` 模式一次只允许一个活动任务；显式 `parallel_worktrees` 模式从规范任务台账生成无重叠所有权、依赖波次和 Codex worktree manifest。
 - `task_state.py`、`quality_gate.py`、`memory_prompts.py` 和 `migrate_project.py` 提供完整本地 CLI。
 - 旧项目迁移只补缺失文件，不覆盖已有变量文件、不修改冻结核心、不重写锁文件、不重新冻结；旧运行时通过独立兼容副本承载新 CLI。
@@ -36,7 +37,7 @@ Plugin 仍然只面向 Codex Desktop/CLI；不支持 OpenClaw、通用 SkillHub 
 
 2026-08-06 在 Windows 本地完成：
 
-- `python -m unittest discover -s tests -v`：112 项，111 通过，1 项因目录符号链接能力不可用而跳过，0 失败。
+- `python -m unittest discover -s tests -v`：117 项，116 通过，1 项因目录符号链接能力不可用而跳过，0 失败。
 - `python -m compileall -q hooks skills/idea-to-build/scripts tests scripts`：通过。
 - `python skills/idea-to-build/scripts/validate_package.py --path .`：通过。
 - `python examples/team-brief-generator/scripts/verify_core.py --path examples/team-brief-generator`：通过，冻结 hash 为 `409bf7fe207f8da0d0e50eff1f0c2ff16b1eb70720b89cfdabd2e742281e7b73`。
@@ -59,7 +60,7 @@ Plugin 仍然只面向 Codex Desktop/CLI；不支持 OpenClaw、通用 SkillHub 
 
 ## 推荐下一步
 
-在一个新的 Codex 任务中加载刚刷新的本地 Plugin，并用冻结示例执行一次真实宿主 smoke test：
+审查并合并本次 GitHub 草稿 PR；随后在一个新的 Codex 任务中加载发布后的 Plugin，并用冻结示例执行一次真实宿主 smoke test：
 
 ```text
 使用 idea-to-build，在 examples/team-brief-generator 中为 TASK-0001 生成 start-task 指导；只复述上下文和计划，不修改代码。

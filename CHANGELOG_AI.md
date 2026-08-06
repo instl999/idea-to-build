@@ -48,3 +48,13 @@
 - 兼容性：保持 Python 3.9+ 标准库、Git、状态 schema 1、任务/质量/dispatch schema 1 和既有冻结 hash。旧项目可仅添加缺失资产；旧 `idea_to_build_lib.py` 保持不变，由独立兼容副本为新 CLI 提供 0.4 能力。
 - 验证结果：112 项 `unittest` 中 111 通过、1 项因 Windows 目录符号链接能力跳过；`compileall`、包校验、冻结示例校验、公开发布审计、Plugin validator 和设置 `PYTHONUTF8=1` 的 Skill validator 均通过。示例冻结核心和锁文件没有被修改。
 - 遗留事项：真实 Codex 宿主 smoke test、adapter finalize/更强波次强制、独立 JSON Schema、签名/provenance 和 0.4.0 远程发布仍未实现或未确认，已保留在技术债务与待确认问题中。
+
+## 2026-08-06 — 任务台账一致性加固与 GitHub 发布准备
+
+- 任务目标：整体复核 0.4.0 代码和公开文档，修复有明确回归证据的一致性问题，并通过独立分支与草稿 PR 发布到用户的 GitHub 仓库。
+- 根因与失败模式：`save_tasks()` 曾在完整验证依赖、门禁和路径前替换规范 JSON，无效候选可污染台账；`block_task()` 曾先写入 `blocked_by` 再验证状态转换，失败时会留下部分修改；`project_state.json.planned_tasks` 也可能与直接台账保存漂移。
+- 主要修改：抽取完整候选台账校验并在所有保存前执行；调用者数据先深拷贝，失败不被内部更新时间修改；任务创建在写 SPEC/PLAN 前预检；阻塞转换在持久化前完成状态、阻塞 ID、自引用与原因检查并只保存一次；保存和转换同步非终态 `planned_tasks`，最后重建 `TASKS.md` 投影。
+- 威胁、兼容与恢复：不改变 CLI、schema、枚举、38 项需求、冻结核心或 dispatch 契约；未知 schema 与非法转换继续失败关闭。单文件 JSON 仍使用临时替换，但 JSON/state/Markdown 不宣称跨文件事务；极端 I/O 失败时保留 Git/原 JSON，并用 `task_state.py sync-docs --path .` 重建投影。
+- 文档与副本：同步英文/中文架构和仓库记忆说明、数据模型、项目状态、公开 changelog 与技术债务；权威 runtime 同步到冻结示例副本，冻结核心和锁文件不变。
+- 回归覆盖：新增无效保存不改写任何投影、无效创建不产生 SPEC、`planned_tasks` 同步、非法阻塞无部分修改、合法阻塞更新当前任务五类测试。
+- 验证结果：117 项 `unittest` 中 116 通过、1 项因 Windows 目录符号链接能力跳过；`compileall`、包校验、冻结示例校验、公开发布脱敏审计、Plugin validator 和设置 `PYTHONUTF8=1` 的 Skill validator 均通过。

@@ -8,6 +8,7 @@
 - Added an old-runtime compatibility loader, migration rollback, current-snapshot evidence, output bounds/redaction, path/ownership checks, and human-only acceptance enforcement.
 - Updated the synthetic frozen example without changing its frozen core or lock; added bilingual repository-memory, architecture, privacy, security, change-control, contribution, and usage documentation.
 - Expanded regression coverage for task readiness/state/dependencies, prompt recovery, quality safety/staleness/manual gates, Hook completion, modes, migration, and package integrity.
+- Hardened canonical task persistence: complete candidate ledgers are validated before replacement, rejected block transitions leave no partial blocker mutation, and the state task projection stays synchronized.
 
 ## 0.3.0 - 2026-08-05
 

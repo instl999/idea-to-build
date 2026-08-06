@@ -62,4 +62,4 @@
 | `specs/<TASK-ID>/SPEC.md` / `PLAN.md` | 任务验收与实施事实 | 可变，但受冻结核心优先级约束 |
 | `project_state.json` 的 `development_mode`、`planned_tasks`、`current_task_id` | 开发选择与当前任务 | schema 仍为 1 的加法兼容字段 |
 
-迁移器只新增缺失文件。旧库缺 API 时新增版本化兼容 runtime，不覆盖原 runtime；迁移失败会删除本次已创建文件。JSON 台账是原子事实源，Markdown 投影发生失败时可从 JSON 重建，不宣称跨文件事务。
+任务台账保存前会深拷贝并完整校验候选内容；任务创建和阻塞转换先校验完整候选变更，`project_state.json.planned_tasks` 从非终态规范任务同步。迁移器只新增缺失文件。旧库缺 API 时新增版本化兼容 runtime，不覆盖原 runtime；迁移失败会删除本次已创建文件。JSON 台账是原子事实源，state 与 Markdown 投影发生失败时可从 JSON 重建，不宣称跨文件事务。

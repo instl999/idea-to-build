@@ -44,6 +44,8 @@ Every task carries:
 
 Supported states are `backlog`, `ready`, `in_progress`, `blocked`, `review`, `done`, and `cancelled`. Transitions are explicit and fail closed. Dependencies and blockers must be resolved before work starts. Sequential mode permits only one active task. Parallel mode requires non-empty, non-overlapping ownership. Completion requires current quality evidence; reopening a done task requires a reason.
 
+Before persistence, the runtime deep-copies and fully validates the complete candidate ledger. Invalid task creation therefore does not create SPEC/PLAN files, and a rejected block transition does not persist `blocked_by` or status changes. `project_state.json.planned_tasks` is a derived list synchronized from non-terminal canonical tasks. Ledger, state, and Markdown writes are not one cross-file transaction; if a later projection write fails, rerun `task_state.py sync-docs --path .` from the JSON source.
+
 The canonical ledger stays local and does not require GitHub Issues, Linear, Jira, login, or network access. `external_ref` is optional synchronization metadata only.
 
 ## Layer 4: quality evidence
