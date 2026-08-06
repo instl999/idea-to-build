@@ -22,10 +22,16 @@ class ProjectFixture:
             self.root, name, "en", False, False, False,
         )
     def close(self):
-        for path in self.temp.rglob("*"):
-            try: path.chmod(0o700 if path.is_dir() else 0o600)
-            except OSError: pass
-        shutil.rmtree(self.temp, ignore_errors=True)
+        def remove_readonly(function, path, error):
+            if isinstance(error[1], FileNotFoundError):
+                return
+            try:
+                Path(path).chmod(0o700)
+                function(path)
+            except FileNotFoundError:
+                pass
+
+        shutil.rmtree(self.temp, onerror=remove_readonly)
     def make_ready(self):
         ledger = itb.load_ledger(self.root)
         updates = []

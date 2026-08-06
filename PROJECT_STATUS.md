@@ -6,7 +6,7 @@
 
 ## 当前阶段
 
-仓库中的 0.4.0 功能、文档与本次审查加固已经完成，发布路径为 `agent/task-ledger-hardening` 分支和 GitHub 草稿 PR。PR 1 的首次 `pull_request` CI 因 GitHub 合成 merge commit 使用精确 `noreply@github.com` 而被历史脱敏审计误报；同一 head SHA 的 push CI 已全绿，当前分支加入精确地址白名单和相似域名拒绝回归测试。该版本在原有 Idea-to-Build 研究、38 项需求门禁、人工确认与冻结、Codex handoff 和 worktree 调度基础上，新增面向长期开发的四层仓库记忆、规范任务生命周期、质量门禁记录、可恢复提示词和增量迁移。
+仓库中的 0.4.0 功能、文档与本次审查加固已经完成，发布路径为 `agent/task-ledger-hardening` 分支和 GitHub 草稿 PR。PR 1 的首次 `pull_request` CI 因 GitHub 合成 merge commit 使用精确 `noreply@github.com` 而被历史脱敏审计误报；该问题已通过精确地址白名单和相似域名拒绝回归测试修复。后续 push CI 暴露测试夹具递归预遍历清理临时 Git 目录时的 TOCTOU 竞态；清理现改由 `shutil.rmtree` 直接执行，并只对只读权限及已经消失的路径恢复。该版本在原有 Idea-to-Build 研究、38 项需求门禁、人工确认与冻结、Codex handoff 和 worktree 调度基础上，新增面向长期开发的四层仓库记忆、规范任务生命周期、质量门禁记录、可恢复提示词和增量迁移。
 
 Plugin 仍然只面向 Codex Desktop/CLI；不支持 OpenClaw、通用 SkillHub 或 Claude Code。运行时保持 Python 3.9+ 标准库和 Git，无数据库、认证、公共 HTTP API、MCP server、托管后端或第三方 Python 依赖。
 
