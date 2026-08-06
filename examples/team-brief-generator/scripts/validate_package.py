@@ -32,7 +32,7 @@ PLUGIN_REQUIRED = (
 def _version_contract_errors(manifest, pyproject_text):
     errors = []
     manifest_version = manifest.get("version")
-    if not isinstance(manifest_version, str) or not re.fullmatch(r"\d+\.\d+\.\d+(?:[-.][0-9A-Za-z.-]+)?(?:\+codex\.\d+)?", manifest_version):
+    if not isinstance(manifest_version, str) or not re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+codex\.[a-z0-9]+(?:-[a-z0-9]+)*)?", manifest_version):
         errors.append("Plugin manifest version must be a semantic version")
         return errors
     match = re.search(r'(?ms)^\[project\]\s*$.*?^version\s*=\s*"([^"]+)"\s*$', pyproject_text)

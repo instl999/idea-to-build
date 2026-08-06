@@ -36,7 +36,7 @@ class PackageValidationTests(unittest.TestCase):
 
     def test_version_contract_rejects_mismatch_and_accepts_cachebuster(self):
         pyproject = '[project]\nversion = "0.3.0"\n'
-        self.assertEqual(validator._version_contract_errors({"version": "0.3.0+codex.123"}, pyproject), [])
+        self.assertEqual(validator._version_contract_errors({"version": "0.3.0+codex.local-20260806-120000"}, pyproject), [])
         errors = validator._version_contract_errors({"version": "0.4.0"}, pyproject)
         self.assertIn("pyproject.toml project.version must match the base plugin manifest version", errors)
 

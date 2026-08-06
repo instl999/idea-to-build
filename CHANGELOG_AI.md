@@ -32,7 +32,7 @@
 
 - 任务目标：在保留现有 Codex 编排与 readiness 后 MCP 工作的前提下整体审查代码，修复有明确证据且兼容风险可控的问题，完成验证后合并本地 `main`。
 - 威胁与失败模式：直接写入 `last_test.json` 可伪造测试门禁；Plugin/生成项目缺少关键文件仍可能校验通过；版本源不一致会导致发布诊断错误；新项目缺少本地忽略规则会增加测试/日志/凭据误提交风险。
-- 主要修改：测试记录增加 project ID、固定 runner 标记和声明命令校验；PreToolUse 保护 Hook 可观察的记录写入；Stop 覆盖通过、缺记录、伪造和递归保护路径。统一项目运行时清单，生成包要求 `.gitignore` 与全部 10 个脚本；Plugin 校验覆盖 marketplace、Hook helper、完整 CLI、CI、发布脚本、项目记忆和 0.3.0/cachebuster 版本一致性。
+- 主要修改：测试记录增加 project ID、固定 runner 标记和声明命令校验；PreToolUse 保护 Hook 可观察的记录写入；Stop 覆盖通过、缺记录、伪造和递归保护路径。统一项目运行时清单，生成包要求 `.gitignore` 与全部 10 个脚本；Plugin 校验覆盖 marketplace、Hook helper、完整 CLI、CI、发布脚本、项目记忆和 0.3.0/cachebuster 版本一致性，并接受官方 helper 支持的小写字母/数字/连字符 token。
 - 兼容与恢复：未改变阶段、38 项需求、冻结核心或 dispatch schema。旧 `last_test.json` 会失败关闭，重新执行 state 中已审查的 `project_state.py record-test` 即可恢复；既有生成项目不会自动获得 `.gitignore` 或新运行时，需要显式升级/复制。
 - 文档与元数据：同步中英文 README、架构、隐私及项目记忆；Skill agent 元数据补充 readiness 后条件式 MCP；权威运行时修改同步到冻结示例副本。
 - 验证结果：完整 `unittest` 共 91 项，90 项通过、1 项因 Windows 目录 symlink 能力跳过；`compileall`、仓库 package validator、官方 Plugin/Skill validator、冻结示例 hash 和公开发布脱敏审计全部通过。
