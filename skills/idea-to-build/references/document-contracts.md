@@ -22,8 +22,10 @@ Before freeze, show a preview and keep `core_frozen: false`. After a human-confi
 
 ## Live documents
 
-`STATUS`, `ROADMAP`, `BACKLOG`, `DECISIONS`, `RISKS`, `RESEARCH`, `RELEASES`, and `CHANGE_REQUESTS` are mutable operational records. A live decision cannot override a frozen contract. Core changes are proposed only through `CHANGE_REQUESTS.md` and completed by a human-managed review and refreeze process.
+`STATUS`, `ROADMAP`, `BACKLOG`, `DECISIONS`, `RISKS`, `RESEARCH`, `RELEASES`, and `CHANGE_REQUESTS` are mutable operational records. A live decision cannot override a frozen contract. `WORKING_RULES.md` and `MEMORY_MAP.md` define mutable working memory; `TASKS.md` projects `.idea-to-build/tasks.json`; `QUALITY_GATES.md` explains explicit `.idea-to-build/quality_gates.json`. `BACKLOG` is product intake, `ROADMAP` is milestone sequence, and `STATUS` is the current operational summary. Core changes are proposed only through `CHANGE_REQUESTS.md` and completed by a human-managed review and refreeze process.
 
 ## Development set
 
 Generate a product requirements document, user stories, flows, features, non-functional requirements, data model, API contract, system context, component boundaries, dependencies, security/privacy/permissions, error handling, observability, testing, deployment, rollback, MVP roadmap, risks, reuse matrix, and Codex handoff.
+
+Also generate a conditional MCP integration guide. It records one post-readiness recommendation, including `MCP_NOT_APPLICABLE` when no server belongs in the design.

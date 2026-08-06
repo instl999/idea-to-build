@@ -9,3 +9,5 @@
 - Latest test result: Not run
 - Latest stable commit: Unrecorded
 - Core consistency: Draft; not frozen
+- Development mode: guided_sequential
+- Current task: Not selected; review TASK-0001

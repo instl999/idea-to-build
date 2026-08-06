@@ -1,7 +1,7 @@
 interface:
-  display_name: "Idea-to-Build：需求验证与 Codex 开发编排器"
-  short_description: "检索现成方案，把早期产品想法转成受保护的 Codex 开发项目"
-  default_prompt: "$idea-to-build 我有一个数字产品想法。请先检索现成方案，再判断采用、组合、扩展还是自建。"
+  display_name: "Idea-to-Build：需求验证与 Codex 长期开发"
+  short_description: "研究方案、冻结核心，并用任务记忆和质量门禁指导 Codex 开发"
+  default_prompt: "$idea-to-build 我有一个数字产品想法。请先检索现成方案，再判断采用、组合、扩展还是自建；需求就绪后仅在确有收益时评估 MCP；核心契约由我确认冻结后，建立四层仓库记忆，默认逐任务指导 Codex 开发，仅在独立工作项需要时使用子智能体与工作树。"
 
 policy:
   allow_implicit_invocation: true

@@ -1,21 +1,26 @@
-# Thread 2: Brief generation
+# Thread 1: Canonical TASK-0001
 
 ## Identity
 
-You own only this workstream: Build traceable brief generation and editing state
+You own only this workstream: Implement TASK-0001 under specs/TASK-0001/SPEC.md
+
+Canonical task: TASK-0001
+Task SPEC: specs/TASK-0001/SPEC.md
+Task PLAN: specs/TASK-0001/PLAN.md
+Required quality gates: verify-core, user-acceptance
 
 ## Before editing
 
 1. Locate the Git root and run `git status`.
 2. Confirm the worktree is clean enough for this scoped work.
-3. Read `AGENTS.md`, every file in `docs/core/`, `docs/live/STATUS.md`, `ROADMAP.md`, `DECISIONS.md`, `RISKS.md`, and the relevant ExecPlan in `plans/`.
+3. Read `AGENTS.md`, `docs/live/MEMORY_MAP.md`, the frozen core summary, `WORKING_RULES.md`, `STATUS.md`, this task SPEC and PLAN, relevant decisions/risks, and no unrelated task archive.
 4. Run `python scripts/verify_core.py --path .`.
 5. Restate the controlling constraints in at most ten bullets.
 6. Do not edit until these checks pass.
 
 ## Git rules
 
-- Use branch `codex/02-brief-generation` in worktree `../team-brief-generator-02-brief-generation`.
+- Use branch `codex/01-task-0001` in worktree `../team-brief-generator-01-task-0001`.
 - Initialize Git only if absent; never start major work in an unexplained dirty tree.
 - Use a separate worktree for parallel changes and stay within the ownership below.
 - Commit each runnable, tested stable feature with an accurate message.
@@ -28,7 +33,11 @@ You own only this workstream: Build traceable brief generation and editing state
 ## File ownership
 
 Writable:
-- `src/generation`
+- `src/intake`
+- `src/shared`
+- `package.json`
+- `package-lock.json`
+- `tsconfig.json`
 
 Read-only: `AGENTS.md`, live documents not assigned here, and other threads' owned paths.
 
@@ -38,15 +47,15 @@ Shared integration files must be proposed in the handoff and merged by Thread 0.
 
 ## Implementation scope
 
-- Must complete: Build traceable brief generation and editing state
+- Must complete: Implement TASK-0001 under specs/TASK-0001/SPEC.md
 - Must not complete: unrelated workstreams or a core-contract change.
-- Dependencies: Input and parsing
+- Dependencies: None
 - Before adding a production dependency, explain necessity, maintenance, license, security, privacy, deployment fit, lock-in, and replacement options.
 - Preserve the API, open-source, and acceptance constraints in the frozen documents.
 
 ## Acceptance and test commands
 
-- `npm test -- generation`
+- `npm test`
 - `python scripts/verify_core.py --path .`
 
 ## Completion conditions

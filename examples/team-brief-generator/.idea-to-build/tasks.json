@@ -1,0 +1,130 @@
+{
+    "schema_version":  1,
+    "updated_at":  "2026-08-06T08:00:00Z",
+    "tasks":  [
+                  {
+                      "branch":  null,
+                      "created_at":  "2026-08-06T08:00:00Z",
+                      "priority":  "P1",
+                      "plan_path":  "specs/TASK-0001/PLAN.md",
+                      "dependencies":  [
+
+                                       ],
+                      "owned_paths":  [
+                                          "src/intake",
+                                          "src/shared",
+                                          "package.json",
+                                          "package-lock.json",
+                                          "tsconfig.json"
+                                      ],
+                      "status":  "ready",
+                      "updated_at":  "2026-08-06T08:00:00Z",
+                      "spec_path":  "specs/TASK-0001/SPEC.md",
+                      "id":  "TASK-0001",
+                      "blocked_by":  [
+
+                                     ],
+                      "latest_commit":  null,
+                      "notes":  [
+                                    "Synthetic fixture task; no real user approval is represented."
+                                ],
+                      "external_ref":  null,
+                      "required_quality_gates":  [
+                                                     "verify-core",
+                                                     "user-acceptance"
+                                                 ],
+                      "title":  "Input and parsing",
+                      "worktree":  null
+                  },
+                  {
+                      "branch":  null,
+                      "created_at":  "2026-08-06T08:00:00Z",
+                      "priority":  "P1",
+                      "plan_path":  "specs/TASK-0002/PLAN.md",
+                      "dependencies":  [
+                                           "TASK-0001"
+                                       ],
+                      "owned_paths":  [
+                                          "src/generation"
+                                      ],
+                      "status":  "ready",
+                      "updated_at":  "2026-08-06T08:00:00Z",
+                      "spec_path":  "specs/TASK-0002/SPEC.md",
+                      "id":  "TASK-0002",
+                      "blocked_by":  [
+
+                                     ],
+                      "latest_commit":  null,
+                      "notes":  [
+                                    "Synthetic fixture task; no real user approval is represented."
+                                ],
+                      "external_ref":  null,
+                      "required_quality_gates":  [
+                                                     "verify-core",
+                                                     "user-acceptance"
+                                                 ],
+                      "title":  "Brief generation",
+                      "worktree":  null
+                  },
+                  {
+                      "branch":  null,
+                      "created_at":  "2026-08-06T08:00:00Z",
+                      "priority":  "P1",
+                      "plan_path":  "specs/TASK-0003/PLAN.md",
+                      "dependencies":  [
+                                           "TASK-0001"
+                                       ],
+                      "owned_paths":  [
+                                          "src/export"
+                                      ],
+                      "status":  "ready",
+                      "updated_at":  "2026-08-06T08:00:00Z",
+                      "spec_path":  "specs/TASK-0003/SPEC.md",
+                      "id":  "TASK-0003",
+                      "blocked_by":  [
+
+                                     ],
+                      "latest_commit":  null,
+                      "notes":  [
+                                    "Synthetic fixture task; no real user approval is represented."
+                                ],
+                      "external_ref":  null,
+                      "required_quality_gates":  [
+                                                     "verify-core",
+                                                     "user-acceptance"
+                                                 ],
+                      "title":  "Export and persistence",
+                      "worktree":  null
+                  },
+                  {
+                      "branch":  null,
+                      "created_at":  "2026-08-06T08:00:00Z",
+                      "priority":  "P1",
+                      "plan_path":  "specs/TASK-0004/PLAN.md",
+                      "dependencies":  [
+                                           "TASK-0001"
+                                       ],
+                      "owned_paths":  [
+                                          "ui"
+                                      ],
+                      "status":  "ready",
+                      "updated_at":  "2026-08-06T08:00:00Z",
+                      "spec_path":  "specs/TASK-0004/SPEC.md",
+                      "id":  "TASK-0004",
+                      "blocked_by":  [
+
+                                     ],
+                      "latest_commit":  null,
+                      "notes":  [
+                                    "Synthetic fixture task; no real user approval is represented."
+                                ],
+                      "external_ref":  null,
+                      "required_quality_gates":  [
+                                                     "verify-core",
+                                                     "user-acceptance"
+                                                 ],
+                      "title":  "Review interface",
+                      "worktree":  null
+                  }
+              ]
+}

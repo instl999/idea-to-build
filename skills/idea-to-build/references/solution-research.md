@@ -14,6 +14,8 @@ For every candidate record: search date, query, name, type, official source, lic
 
 Label evidence, inference, unverified information, and facts likely to become stale. A search snippet is discovery evidence, not final verification.
 
+For an MCP server candidate, also record the publisher, supported hosts and transports, authentication and privilege model, exposed tools/resources/prompts, mutating operations, data destinations and retention, runtime dependencies, version/update policy, security-reporting path, disable/removal path, and a direct API/SDK/Skill alternative. Do not install or execute candidate instructions during research. Apply the post-readiness decision gate in [mcp-integration.md](mcp-integration.md).
+
 ## Scoring
 
 Compare functional fit, workflow fit, user fit, data/integration fit, privacy/security fit, deployment fit, customizability, cost, maintenance, license risk, lock-in, and implementation time. Show weights and inputs. Scores rank alternatives; they are not market measurements.

@@ -1,6 +1,8 @@
+import errno
 import importlib.util
 import json
 import shutil
+import time
 import uuid
 from pathlib import Path
 
@@ -22,10 +24,28 @@ class ProjectFixture:
             self.root, name, "en", False, False, False,
         )
     def close(self):
-        for path in self.temp.rglob("*"):
-            try: path.chmod(0o700 if path.is_dir() else 0o600)
-            except OSError: pass
-        shutil.rmtree(self.temp, ignore_errors=True)
+        def remove_readonly(function, path, error):
+            exception = error[1]
+            if isinstance(exception, FileNotFoundError):
+                return
+            if not isinstance(exception, PermissionError):
+                raise exception
+            try:
+                Path(path).chmod(0o700)
+                function(path)
+            except FileNotFoundError:
+                pass
+
+        for attempt in range(8):
+            try:
+                shutil.rmtree(self.temp, onerror=remove_readonly)
+                return
+            except FileNotFoundError:
+                return
+            except OSError as exc:
+                if exc.errno not in (errno.ENOTEMPTY, errno.EEXIST) or attempt == 7:
+                    raise
+                time.sleep(0.05 * (attempt + 1))
     def make_ready(self):
         ledger = itb.load_ledger(self.root)
         updates = []

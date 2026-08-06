@@ -4,18 +4,48 @@ import argparse, ast, json, re, sys
 from pathlib import Path
 from idea_to_build_lib import IdeaToBuildError, load_json, validate_project_package
 
+PLUGIN_SCRIPT_NAMES = (
+    "codex_dispatch.py", "freeze_core.py", "generate_handoff.py", "idea_to_build_lib.py",
+    "init_project.py", "project_state.py", "render_context.py", "requirements_check.py",
+    "research_report.py", "validate_package.py", "verify_core.py", "task_state.py",
+    "quality_gate.py", "memory_prompts.py", "migrate_project.py", "_memory_runtime.py",
+)
 PLUGIN_REQUIRED = (
-    ".codex-plugin/plugin.json", "skills/idea-to-build/SKILL.md", "skills/idea-to-build/agents/openai.yaml",
+    ".codex-plugin/plugin.json", ".agents/plugins/marketplace.json",
+    "skills/idea-to-build/SKILL.md", "skills/idea-to-build/agents/openai.yaml",
     "skills/idea-to-build/references/workflow.md", "skills/idea-to-build/references/solution-research.md",
     "skills/idea-to-build/references/requirements-readiness.md", "skills/idea-to-build/references/document-contracts.md",
+    "skills/idea-to-build/references/mcp-integration.md",
     "skills/idea-to-build/references/codex-orchestration.md", "skills/idea-to-build/references/git-policy.md",
-    "skills/idea-to-build/references/security-policy.md", "skills/idea-to-build/assets/project-template/AGENTS.md",
+    "skills/idea-to-build/references/security-policy.md", "skills/idea-to-build/scripts/codex_dispatch.py", "skills/idea-to-build/assets/project-template/AGENTS.md",
     "hooks/hooks.json", "hooks/session_start.py", "hooks/user_prompt_submit.py", "hooks/pre_tool_use.py",
     "hooks/post_tool_use.py", "hooks/stop_check.py", "README.md", "README.zh-CN.md", "SECURITY.md", "SECURITY.zh-CN.md",
     "CONTRIBUTING.md", "CONTRIBUTING.zh-CN.md", "docs/ARCHITECTURE.md", "docs/ARCHITECTURE.zh-CN.md",
+    "docs/REPOSITORY_MEMORY.md", "docs/REPOSITORY_MEMORY.zh-CN.md",
     "docs/PRIVACY.md", "docs/PRIVACY.zh-CN.md", "docs/CHANGE_CONTROL.md", "docs/CHANGE_CONTROL.zh-CN.md",
-    "CHANGELOG.md", "LICENSE", "pyproject.toml",
-)
+    "CHANGELOG.md", "CHANGELOG_AI.md", "LICENSE", "pyproject.toml", "AGENTS.md", "PROJECT_STATUS.md",
+    "hooks/_hooklib.py", "scripts/audit_public_release.py", ".github/workflows/ci.yml",
+    "docs/INDEX.md", "docs/PROJECT_OVERVIEW.md", "docs/DOMAIN_MODEL.md", "docs/DATA_MODEL.md",
+    "docs/API_AND_INTEGRATIONS.md", "docs/DEVELOPMENT_GUIDE.md", "docs/TESTING_AND_QUALITY.md",
+    "docs/DEPLOYMENT_AND_OPERATIONS.md", "docs/KNOWN_ISSUES_AND_TECH_DEBT.md",
+    "docs/OPEN_QUESTIONS.md", "docs/DECISIONS.md", "skills/idea-to-build/references/repository-memory.md",
+    "skills/idea-to-build/assets/project-template/.idea-to-build/tasks.json", "skills/idea-to-build/assets/project-template/.idea-to-build/quality_gates.json",
+    "skills/idea-to-build/assets/project-template/docs/live/MEMORY_MAP.md", "skills/idea-to-build/assets/project-template/docs/live/WORKING_RULES.md",
+    "skills/idea-to-build/assets/project-template/specs/TASK-0001-example/SPEC.md", "skills/idea-to-build/assets/project-template/codex/PROMPT_CATALOG.md",
+) + tuple("skills/idea-to-build/scripts/" + item for item in PLUGIN_SCRIPT_NAMES)
+
+def _version_contract_errors(manifest, pyproject_text):
+    errors = []
+    manifest_version = manifest.get("version")
+    if not isinstance(manifest_version, str) or not re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+codex\.[a-z0-9]+(?:-[a-z0-9]+)*)?", manifest_version):
+        errors.append("Plugin manifest version must be a semantic version")
+        return errors
+    match = re.search(r'(?ms)^\[project\]\s*$.*?^version\s*=\s*"([^"]+)"\s*$', pyproject_text)
+    if match is None:
+        errors.append("pyproject.toml must declare project.version")
+    elif match.group(1) != manifest_version.split("+codex.", 1)[0]:
+        errors.append("pyproject.toml project.version must match the base plugin manifest version")
+    return errors
 
 def validate_plugin(root):
     errors = ["Missing required plugin file: %s" % item for item in PLUGIN_REQUIRED if not (root / item).is_file()]
@@ -26,6 +56,9 @@ def validate_plugin(root):
         elif not (root / "skills" / plugin_name).is_dir(): errors.append("Plugin name must match a directory under skills/")
         if manifest.get("skills") != "./skills/": errors.append("Manifest skills path must be ./skills/")
         if "hooks" in manifest: errors.append("Default hooks/hooks.json discovery should be used; omit manifest hooks for validator compatibility")
+        pyproject_path = root / "pyproject.toml"
+        if pyproject_path.is_file():
+            errors.extend(_version_contract_errors(manifest, pyproject_path.read_text(encoding="utf-8")))
     except IdeaToBuildError as exc: errors.append(str(exc))
     skill_path = root / "skills" / "idea-to-build" / "SKILL.md"
     if skill_path.is_file():

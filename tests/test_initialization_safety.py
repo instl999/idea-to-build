@@ -13,6 +13,14 @@ class InitializationSafetyTests(unittest.TestCase):
         with self.assertRaisesRegex(itb.IdeaToBuildError, "Refusing to overwrite"): self.init()
         self.assertEqual(conflict.read_text(encoding="utf-8"), "preserve")
         self.assertFalse((self.target / "AGENTS.md").exists())
+    def test_initialization_copies_every_runtime_and_local_ignore_rules(self):
+        result = self.init()
+        self.assertIn(".gitignore", result["created_files"])
+        ignore = (self.target / ".gitignore").read_text(encoding="utf-8")
+        self.assertIn(".idea-to-build/last_test.json", ignore)
+        for name in itb.PROJECT_RUNTIME_NAMES:
+            with self.subTest(name=name):
+                self.assertTrue((self.target / "scripts" / name).is_file())
     def test_multiline_project_name_is_rejected(self):
         with self.assertRaises(itb.IdeaToBuildError): self.init(name="Bad\nProject")
     def test_linked_output_ancestor_is_rejected(self):

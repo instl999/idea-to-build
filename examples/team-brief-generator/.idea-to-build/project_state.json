@@ -4,7 +4,7 @@
   "project_name": "Team Brief Generator",
   "current_phase": "CODEX_HANDOFF_READY",
   "created_at": "2026-08-05T05:05:18Z",
-  "updated_at": "2026-08-05T11:03:22Z",
+  "updated_at": "2026-08-06T07:09:39Z",
   "user_language": "en",
   "search_status": "COMPLETE",
   "research_decision": "BUILD_CUSTOM",
@@ -18,14 +18,21 @@
     "confirmed_at": "2026-08-05T05:05:19Z",
     "actor": "human"
   },
+  "codex_dispatch_status": "READY",
+  "codex_dispatch_started_at": null,
   "unresolved_questions": [],
   "accepted_assumptions": [],
   "generated_documents": [
     "codex/HANDOFF.md",
+    "codex/dispatch.json",
     "codex/prompts/00-orchestrator-architecture-and-integratio.md",
+    "codex/prompts/01-canonical-task-0001.md",
     "codex/prompts/01-input-and-parsing.md",
     "codex/prompts/02-brief-generation.md",
+    "codex/prompts/02-canonical-task-0002.md",
+    "codex/prompts/03-canonical-task-0003.md",
     "codex/prompts/03-export-and-persistence.md",
+    "codex/prompts/04-canonical-task-0004.md",
     "codex/prompts/04-review-interface.md",
     "codex/prompts/05-quality-engineering.md",
     "codex/prompts/06-release-and-operations.md",
@@ -37,6 +44,7 @@
     "docs/design/ERROR_HANDLING.md",
     "docs/design/EXTERNAL_DEPENDENCIES.md",
     "docs/design/FEATURES.md",
+    "docs/design/MCP_INTEGRATION_GUIDE.md",
     "docs/design/MODULE_BOUNDARIES.md",
     "docs/design/MVP_ROADMAP.md",
     "docs/design/NON_FUNCTIONAL_REQUIREMENTS.md",
@@ -51,7 +59,7 @@
     "docs/design/USER_FLOWS.md",
     "docs/design/USER_STORIES.md"
   ],
-  "planned_codex_threads": 7,
+  "planned_codex_threads": 5,
   "current_milestone": "Handoff",
   "last_verified_commit": null,
   "workstreams": [
@@ -111,5 +119,13 @@
   ],
   "test_commands": [
     "npm test"
-  ]
+  ],
+  "development_mode": "parallel_worktrees",
+  "planned_tasks": [
+    "TASK-0001",
+    "TASK-0002",
+    "TASK-0003",
+    "TASK-0004"
+  ],
+  "current_task_id": null
 }

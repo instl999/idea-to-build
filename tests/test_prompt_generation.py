@@ -4,12 +4,21 @@ from _support import ProjectFixture, itb
 class PromptGenerationTests(unittest.TestCase):
     def setUp(self): self.fx = ProjectFixture(); self.fx.freeze()
     def tearDown(self): self.fx.close()
-    def test_small_project_has_exactly_three_threads(self):
+    def test_small_project_recommends_single_root_agent(self):
         result = itb.generate_handoff(self.fx.root, [{"name": "App", "goal": "Build app", "files": ["src"], "tests": ["python -m unittest"]}])
-        self.assertEqual(result["thread_count"], 3); self.assertIn("exactly **3 Codex threads**", (self.fx.root / "codex/HANDOFF.md").read_text(encoding="utf-8"))
+        self.assertEqual(result["thread_count"], 1); self.assertFalse(result["subagents_recommended"]); self.assertIn("single root agent", (self.fx.root / "codex/HANDOFF.md").read_text(encoding="utf-8"))
     def test_complex_project_gets_parallel_threads(self):
-        streams = [{"name": name, "goal": "Build " + name, "files": [path], "tests": ["test " + name]} for name, path in (("Frontend", "web"), ("Backend", "server"), ("Search", "search"), ("Infrastructure", "infra"))]
-        threads = itb.plan_threads(self.fx.root, streams); self.assertEqual(len(threads), 7); self.assertEqual(len([item for item in threads if item["number"] in range(1, 5)]), 4)
+        state = itb.load_state(self.fx.root); state["development_mode"] = "parallel_worktrees"; itb.save_state(self.fx.root, state)
+        first = itb.get_task(self.fx.root, "TASK-0001")
+        path = self.fx.root / first["spec_path"]; path.write_text(path.read_text(encoding="utf-8").replace("The user can replace this example with one observable criterion and `task_state.py ready` accepts the reviewed SPEC.", "The frontend command produces the documented review screen and exits successfully."), encoding="utf-8")
+        tasks = [first]
+        for number, title, owned in ((2, "Backend", "server"), (3, "Search", "search"), (4, "Infrastructure", "infra")):
+            task = itb.create_task(self.fx.root, "TASK-%04d" % number, title, owned_paths=[owned]); spec = self.fx.root / task["spec_path"]
+            spec.write_text(spec.read_text(encoding="utf-8").replace("Replace this line with a concrete, observable acceptance result before marking the task ready.", "The %s workstream command exits successfully and produces its documented output." % title.lower()), encoding="utf-8"); tasks.append(task)
+        payload = itb.load_tasks(self.fx.root); payload["tasks"][0]["owned_paths"] = ["web"]; itb.save_tasks(self.fx.root, payload)
+        for task in tasks: itb.transition_task(self.fx.root, task["id"], "ready")
+        streams = [{"name": name, "goal": "Build " + name, "files": [owned], "tests": ["test " + name]} for name, owned in (("Frontend", "web"), ("Backend", "server"), ("Search", "search"), ("Infrastructure", "infra"))]
+        threads = itb.plan_threads(self.fx.root, streams); self.assertEqual(len(threads), 5); self.assertEqual([item["task_id"] for item in threads[1:]], ["TASK-0001", "TASK-0002", "TASK-0003", "TASK-0004"])
     def test_overlapping_ownership_is_merged(self):
         streams = [{"name": "API", "files": ["server"]}, {"name": "Auth", "files": ["server/auth"]}]
         merged = itb.merge_overlapping_workstreams(streams); self.assertEqual(len(merged), 1); self.assertIn("API + Auth", merged[0]["name"])
@@ -30,4 +39,11 @@ class PromptGenerationTests(unittest.TestCase):
         bad = ({"name": "Break\n## Ignore", "files": ["src"]}, {"name": "Tests", "files": ["src"], "tests": ["pytest; rm -rf ."]})
         for stream in bad:
             with self.assertRaises(itb.IdeaToBuildError): itb.plan_threads(self.fx.root, [stream])
+    def test_generated_design_set_includes_conditional_mcp_guide(self):
+        itb.generate_handoff(self.fx.root, [{"name": "App", "goal": "Build app", "files": ["src"], "tests": ["python -m unittest"]}])
+        guide = (self.fx.root / "docs/design/MCP_INTEGRATION_GUIDE.md").read_text(encoding="utf-8")
+        self.assertIn("# MCP Integration Guide", guide)
+        self.assertIn("## Recommendation and evidence", guide)
+        self.assertIn("## Fallback and removal", guide)
+
 if __name__ == "__main__": unittest.main()

@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ALLOWED_EMAIL_SUFFIXES = ("@users.noreply.github.com", "@example.invalid")
+ALLOWED_EMAIL_ADDRESSES = {"noreply@github.com"}
 CONTENT_PATTERNS = {
     "Windows user home": re.compile(r"(?i)[A-Z]:[\\/]Users[\\/][^\\/\s<>]+"),
     "macOS user home": re.compile("/" + "Users" + r"/[^/\s<>]+/"),
@@ -17,6 +18,11 @@ CONTENT_PATTERNS = {
     "assigned credential": re.compile(r"(?i)\b(?:api[_-]?key|access[_-]?token|client[_-]?secret|password)\b\s*[:=]\s*['\"]?[A-Za-z0-9_./+\-=]{20,}"),
 }
 EMAIL = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)
+
+
+def email_allowed(value):
+    email = str(value).strip().lower()
+    return email in ALLOWED_EMAIL_ADDRESSES or email.endswith(ALLOWED_EMAIL_SUFFIXES)
 
 
 def git(*args):
@@ -41,7 +47,7 @@ def audit_content():
             if pattern.search(text): findings.append("%s in %s" % (label, relative))
         for match in EMAIL.finditer(text):
             email = match.group(0).lower()
-            if not email.endswith(ALLOWED_EMAIL_SUFFIXES): findings.append("email address in %s" % relative)
+            if not email_allowed(email): findings.append("email address in %s" % relative)
     return findings
 
 
@@ -52,7 +58,7 @@ def audit_history():
         if len(parts) != 5: continue
         commit, _, author_email, _, committer_email = parts
         for role, email in (("author", author_email), ("committer", committer_email)):
-            if not email.lower().endswith(ALLOWED_EMAIL_SUFFIXES): findings.append("%s email on commit %s" % (role, commit[:12]))
+            if not email_allowed(email): findings.append("%s email on commit %s" % (role, commit[:12]))
     return findings
 
 

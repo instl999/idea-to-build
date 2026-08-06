@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "updated_at": "{{CREATED_AT}}",
+  "tasks": [
+    {
+      "id": "TASK-0001",
+      "title": "Replace this example with the first accepted development task",
+      "status": "backlog",
+      "priority": "P1",
+      "spec_path": "specs/TASK-0001-example/SPEC.md",
+      "plan_path": "specs/TASK-0001-example/PLAN.md",
+      "dependencies": [],
+      "blocked_by": [],
+      "branch": null,
+      "worktree": null,
+      "owned_paths": [],
+      "required_quality_gates": ["verify-core", "user-acceptance"],
+      "latest_commit": null,
+      "created_at": "{{CREATED_AT}}",
+      "updated_at": "{{CREATED_AT}}",
+      "external_ref": null,
+      "notes": ["Synthetic template task; edit its SPEC and owned paths before marking ready."]
+    }
+  ]
+}

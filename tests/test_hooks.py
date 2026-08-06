@@ -1,5 +1,5 @@
-import os, unittest
-from _support import ProjectFixture, ROOT, run_hook
+import json, os, subprocess, sys, unittest
+from _support import ProjectFixture, ROOT, itb, run_hook
 
 class HookTests(unittest.TestCase):
     def setUp(self): self.fx = ProjectFixture(); self.fx.freeze()
@@ -8,6 +8,24 @@ class HookTests(unittest.TestCase):
         return {"session_id": "s", "turn_id": "t", "cwd": str(cwd or self.fx.root), "hook_event_name": "PreToolUse", "tool_name": tool, "tool_use_id": "u", "tool_input": {"command": command}, "permission_mode": "default"}
     def assert_blocked(self, tool, command, cwd=None):
         result = run_hook("pre_tool_use.py", self.event(tool, command, cwd)); self.assertIsNotNone(result); self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+    def prepare_development_worktree(self, test_command="python --version"):
+        subprocess.run(["git", "init", "-q"], cwd=str(self.fx.root), check=True)
+        subprocess.run(["git", "config", "user.name", "Idea-to-Build Tests"], cwd=str(self.fx.root), check=True)
+        subprocess.run(["git", "config", "user.email", "tests@example.invalid"], cwd=str(self.fx.root), check=True)
+        subprocess.run(["git", "add", "."], cwd=str(self.fx.root), check=True)
+        subprocess.run(["git", "commit", "-qm", "fixture"], cwd=str(self.fx.root), check=True)
+        state = itb.load_state(self.fx.root)
+        state["current_phase"] = "DEVELOPMENT_ACTIVE"
+        state["test_commands"] = [test_command]
+        itb.save_state(self.fx.root, state)
+        (self.fx.root / ".idea-to-build/tasks.json").unlink()
+        (self.fx.root / ".idea-to-build/quality_gates.json").unlink()
+        source = self.fx.root / "src/change.py"; source.parent.mkdir(); source.write_text("value = 1\n", encoding="utf-8")
+        status = self.fx.root / "docs/live/STATUS.md"
+        status.write_text(status.read_text(encoding="utf-8") + "\nDevelopment update.\n", encoding="utf-8")
+        return test_command
+    def stop_event(self):
+        return {"cwd": str(self.fx.root), "hook_event_name": "Stop", "stop_hook_active": False}
     def test_apply_patch_core_blocked(self): self.assert_blocked("apply_patch", "*** Begin Patch\n*** Update File: docs/core/PROJECT_CHARTER.md\n+x\n*** End Patch")
     def test_shell_redirection_core_blocked(self): self.assert_blocked("Bash", "echo changed > docs/core/PROJECT_CHARTER.md")
     def test_move_remove_and_git_restore_blocked(self):
@@ -19,6 +37,16 @@ class HookTests(unittest.TestCase):
     def test_active_document_allowed(self):
         result = run_hook("pre_tool_use.py", self.event("Bash", "Set-Content docs/live/STATUS.md updated")); self.assertIsNone(result)
     def test_human_only_freeze_blocked(self): self.assert_blocked("Bash", "python scripts/freeze_core.py --path .")
+    def test_dispatch_adapter_is_protected(self):
+        self.assert_blocked("apply_patch", "*** Begin Patch\n*** Update File: scripts/codex_dispatch.py\n+x\n*** End Patch")
+    def test_protected_runtime_execution_is_allowed(self):
+        for command in (
+            "python scripts/verify_core.py --path .",
+            "python scripts/codex_dispatch.py preview --path .",
+            "python scripts/codex_dispatch.py merge-result --path . --task-id task-01-app --commit " + "a" * 40 + " --base-commit " + "b" * 40,
+        ):
+            with self.subTest(command=command):
+                self.assertIsNone(run_hook("pre_tool_use.py", self.event("Bash", command)))
     def test_context_injected_on_prompt(self):
         event = {"session_id": "s", "turn_id": "t", "cwd": str(self.fx.root), "hook_event_name": "UserPromptSubmit", "prompt": "continue", "permission_mode": "default"}
         result = run_hook("user_prompt_submit.py", event); context = result["hookSpecificOutput"]["additionalContext"]; self.assertIn("never modify docs/core", context); self.assertIn("Core status: VERIFIED", context)
@@ -48,10 +76,63 @@ class HookTests(unittest.TestCase):
         finally: other.close()
 
     def test_structured_dotted_protected_paths_are_blocked(self):
-        for path in (".idea-to-build/core.lock.json", ".codex/hooks/guard.py"):
+        for path in (".idea-to-build/core.lock.json", ".idea-to-build/last_test.json", ".idea-to-build/last_quality.json", ".codex/hooks/guard.py", "scripts/_memory_runtime.py", "scripts/idea_to_build_memory_runtime.py"):
             event = self.event("write", ""); event["tool_input"] = {"path": path, "content": "tamper"}
             result = run_hook("pre_tool_use.py", event)
             self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+    def test_manual_quality_acceptance_is_human_only_but_gate_run_is_allowed(self):
+        self.assert_blocked("Bash", 'python scripts/quality_gate.py accept-manual --path . --task TASK-0001 --gate user-acceptance --confirmation "I accept this task result"')
+        self.assertIsNone(run_hook("pre_tool_use.py", self.event("Bash", "python scripts/quality_gate.py all --path . --task TASK-0001")))
+    def test_direct_test_record_write_is_blocked_but_recorder_execution_is_allowed(self):
+        self.assert_blocked("Bash", "Set-Content .idea-to-build/last_test.json forged")
+        command = 'python scripts/project_state.py record-test --path . --test-command "python --version"'
+        self.assertIsNone(run_hook("pre_tool_use.py", self.event("Bash", command)))
+    def test_stop_blocks_without_a_test_record(self):
+        self.prepare_development_worktree()
+        result = run_hook("stop_check.py", self.stop_event())
+        self.assertEqual(result["decision"], "block")
+        self.assertIn("No test result is recorded", result["reason"])
+    def test_stop_rejects_a_forged_test_record(self):
+        self.prepare_development_worktree()
+        record = self.fx.root / ".idea-to-build/last_test.json"
+        record.write_text(json.dumps({"schema_version": 1, "status": "passed", "exit_code": 0}), encoding="utf-8")
+        result = run_hook("stop_check.py", self.stop_event())
+        self.assertEqual(result["decision"], "block")
+        self.assertIn("different project", result["reason"])
+    def test_stop_accepts_record_test_evidence_for_current_snapshot(self):
+        command = self.prepare_development_worktree()
+        completed = subprocess.run(
+            [sys.executable, str(self.fx.root / "scripts/project_state.py"), "record-test", "--path", str(self.fx.root), "--test-command", command],
+            cwd=str(self.fx.root), text=True, capture_output=True, timeout=15,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        payload = json.loads((self.fx.root / ".idea-to-build/last_test.json").read_text(encoding="utf-8"))
+        self.assertEqual(payload["project_id"], itb.load_state(self.fx.root)["project_id"])
+        self.assertEqual(payload["runner"], "project_state.py:record-test:v1")
+        result = run_hook("stop_check.py", self.stop_event())
+        self.assertTrue(result["continue"])
+    def test_stop_allows_memory_only_maintenance_without_full_quality_run(self):
+        subprocess.run(["git", "init", "-q"], cwd=str(self.fx.root), check=True)
+        subprocess.run(["git", "config", "user.name", "Idea-to-Build Tests"], cwd=str(self.fx.root), check=True)
+        subprocess.run(["git", "config", "user.email", "tests@example.invalid"], cwd=str(self.fx.root), check=True)
+        subprocess.run(["git", "add", "."], cwd=str(self.fx.root), check=True); subprocess.run(["git", "commit", "-qm", "fixture"], cwd=str(self.fx.root), check=True)
+        state = itb.load_state(self.fx.root); state["current_phase"] = "DEVELOPMENT_ACTIVE"; itb.save_state(self.fx.root, state)
+        rules = self.fx.root / "docs/live/WORKING_RULES.md"; rules.write_text(rules.read_text(encoding="utf-8") + "\n- Clarified mutable rule.\n", encoding="utf-8")
+        result = run_hook("stop_check.py", self.stop_event()); self.assertTrue(result["continue"]); self.assertIn("memory-maintenance", result["systemMessage"])
+
+    def test_stop_blocks_substantive_change_without_current_quality(self):
+        task = itb.get_task(self.fx.root, "TASK-0001"); spec = self.fx.root / task["spec_path"]
+        spec.write_text(spec.read_text(encoding="utf-8").replace("The user can replace this example with one observable criterion and `task_state.py ready` accepts the reviewed SPEC.", "The changed source is covered by a passing configured command and review evidence."), encoding="utf-8")
+        tasks = itb.load_tasks(self.fx.root); tasks["tasks"][0]["owned_paths"] = ["src"]; itb.save_tasks(self.fx.root, tasks); itb.transition_task(self.fx.root, "TASK-0001", "ready"); itb.transition_task(self.fx.root, "TASK-0001", "in_progress")
+        subprocess.run(["git", "init", "-q"], cwd=str(self.fx.root), check=True); subprocess.run(["git", "config", "user.name", "Idea-to-Build Tests"], cwd=str(self.fx.root), check=True); subprocess.run(["git", "config", "user.email", "tests@example.invalid"], cwd=str(self.fx.root), check=True); subprocess.run(["git", "add", "."], cwd=str(self.fx.root), check=True); subprocess.run(["git", "commit", "-qm", "fixture"], cwd=str(self.fx.root), check=True)
+        state = itb.load_state(self.fx.root); state["current_phase"] = "DEVELOPMENT_ACTIVE"; itb.save_state(self.fx.root, state)
+        source = self.fx.root / "src/change.py"; source.parent.mkdir(); source.write_text("value = 1\n", encoding="utf-8")
+        plan = self.fx.root / task["plan_path"]; plan.write_text(plan.read_text(encoding="utf-8") + "\n- [x] Implemented source change.\n", encoding="utf-8")
+        status = self.fx.root / "docs/live/STATUS.md"; status.write_text(status.read_text(encoding="utf-8") + "\nDevelopment update.\n", encoding="utf-8")
+        result = run_hook("stop_check.py", self.stop_event()); self.assertEqual(result["decision"], "block"); self.assertIn("quality", result["reason"])
+    def test_stop_hook_active_is_quiet(self):
+        event = self.stop_event(); event["stop_hook_active"] = True
+        self.assertIsNone(run_hook("stop_check.py", event))
     def test_state_flag_cannot_unfreeze_core(self):
         state_path = self.fx.root / ".idea-to-build/project_state.json"
         import json

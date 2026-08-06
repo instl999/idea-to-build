@@ -29,7 +29,7 @@ Use the state CLI for explicit transitions. It rejects unsupported jumps and new
 - Build gate: requirements gathering follows a user decision to configure, combine, extend, or build.
 - Readiness gate: all blocking readiness checks pass.
 - Freeze gate: readiness passes and a human records explicit confirmation.
-- Development gate: core hashes verify and the handoff contains non-overlapping file ownership.
+- Development gate: core hashes verify; the current canonical task has SPEC/PLAN and concrete acceptance; quality gates are explicit; parallel handoffs additionally have non-overlapping ownership.
 - Release gate: tests, documentation, risks, decisions, core verification, and Git status are reviewed.
 
 ## Question strategy

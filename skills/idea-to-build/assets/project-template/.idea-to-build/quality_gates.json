@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "updated_at": "{{CREATED_AT}}",
+  "gates": [
+    {
+      "id": "verify-core",
+      "name": "Frozen core verification",
+      "kind": "command",
+      "command": ["python", "scripts/verify_core.py", "--path", "."],
+      "instructions": null,
+      "required": true,
+      "scope": "all",
+      "configured": true,
+      "source": "Idea-to-Build default",
+      "updated_at": "{{CREATED_AT}}"
+    },
+    {
+      "id": "user-acceptance",
+      "name": "User acceptance",
+      "kind": "manual",
+      "command": null,
+      "instructions": "The user reviews the task acceptance criteria and confirms the observed result.",
+      "required": true,
+      "scope": "all",
+      "configured": true,
+      "source": "Idea-to-Build default",
+      "updated_at": "{{CREATED_AT}}"
+    }
+  ]
+}

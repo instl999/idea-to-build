@@ -4,7 +4,9 @@
 
 ## Principle
 
-A frozen core is immutable in normal development. Version 0.2.0 intentionally has no unlock, rehash, or in-place refreeze command. Hooks, Skills, and AI tasks must not edit the lock/core or manufacture human approval. Updating a hash to match an unexplained change destroys the evidence and is never an acceptable repair.
+A frozen core is immutable in normal development. Version 0.4.0 continues to provide no unlock, rehash, or in-place refreeze command. Hooks, Skills, and AI tasks must not edit the lock/core or manufacture human approval. Updating a hash to match an unexplained change destroys the evidence and is never an acceptable repair.
+
+Root-agent versus subagent execution is a reversible Codex development choice and is deliberately excluded from the frozen product lock. Switching execution strategy does not require a core change while ownership, acceptance, architecture, privacy, security, and deployment contracts remain unchanged.
 
 ## Non-core changes
 
@@ -25,3 +27,7 @@ Do not silently replace the old lock in the original frozen project. If organiza
 ## Emergency integrity failure
 
 If verification fails without an approved request, treat it as potential corruption: stop, preserve copies/logs/Git status, identify the writer and scope, rotate any possibly exposed credential, restore from a known good commit in a recovery branch, and investigate. Never “fix” the incident by recomputing hashes over unknown content.
+
+## Task specification and gate changes
+
+A task SPEC may evolve before implementation while preserving evidence labels and frozen constraints. Once work starts, scope changes must be recorded in SPEC/PLAN and task notes; core-affecting changes stop and enter `CHANGE_REQUESTS.md`. Gate configuration changes require format/command-safety validation and cannot retroactively make stale or failed evidence pass. A done task is reopened with a reason and receives fresh snapshot-bound validation and human acceptance.

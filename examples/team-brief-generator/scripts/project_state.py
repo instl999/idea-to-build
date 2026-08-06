@@ -2,7 +2,7 @@
 """Inspect and update Idea-to-Build project state."""
 import argparse, json, os, shlex, subprocess, sys
 from pathlib import Path
-from idea_to_build_lib import (BUILDABLE_DECISIONS, IdeaToBuildError, RESEARCH_DECISIONS, confirm_core, git_snapshot, load_json, load_state, safe_project_path, save_state, validate_single_line, transition_state, update_requirements, utc_now, write_json)
+from idea_to_build_lib import (BUILDABLE_DECISIONS, DEVELOPMENT_MODES, IdeaToBuildError, RESEARCH_DECISIONS, TEST_RECORD_RUNNER, confirm_core, git_snapshot, load_json, load_state, safe_project_path, save_state, validate_single_line, transition_state, update_requirements, utc_now, write_json)
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__); sub = parser.add_subparsers(dest="command", required=True)
@@ -11,6 +11,7 @@ def main():
     decision = sub.add_parser("set-decision"); decision.add_argument("--path", required=True); decision.add_argument("--research", choices=sorted(RESEARCH_DECISIONS)); decision.add_argument("--build", choices=sorted(BUILDABLE_DECISIONS))
     update = sub.add_parser("update-requirements"); update.add_argument("--path", required=True); update.add_argument("--input", required=True)
     confirmation = sub.add_parser("confirm-core"); confirmation.add_argument("--path", required=True); confirmation.add_argument("--confirmation", required=True)
+    mode = sub.add_parser("set-development-mode"); mode.add_argument("--path", required=True); mode.add_argument("--mode", choices=sorted(DEVELOPMENT_MODES), required=True)
     test = sub.add_parser("record-test"); test.add_argument("--path", required=True); test.add_argument("--test-command", required=True)
     args = parser.parse_args()
     if args.command == "status": result = load_state(args.path)
@@ -26,6 +27,8 @@ def main():
         if not isinstance(updates, list): raise IdeaToBuildError("Input must contain an updates array")
         result = update_requirements(args.path, updates)
     elif args.command == "confirm-core": result = confirm_core(args.path, args.confirmation)
+    elif args.command == "set-development-mode":
+        result = load_state(args.path); result["development_mode"] = args.mode; save_state(args.path, result)
     else:
         root = Path(args.path).expanduser().resolve(); state = load_state(root)
         allowed = [validate_single_line("test command", value, 500) for value in state.get("test_commands", [])]
@@ -35,7 +38,7 @@ def main():
         try: completed = subprocess.run(command, cwd=str(root), check=False)
         except OSError as exc: raise IdeaToBuildError("Cannot run declared test command: %s" % exc) from exc
         snapshot = git_snapshot(root)
-        result = {"schema_version": 1, "command": args.test_command, "status": "passed" if completed.returncode == 0 else "failed", "exit_code": completed.returncode, "recorded_at": utc_now(), "git": snapshot}
+        result = {"schema_version": 1, "project_id": state["project_id"], "runner": TEST_RECORD_RUNNER, "command": args.test_command, "status": "passed" if completed.returncode == 0 else "failed", "exit_code": completed.returncode, "recorded_at": utc_now(), "git": snapshot}
         write_json(safe_project_path(root, ".idea-to-build/last_test.json"), result)
     print(json.dumps(result, ensure_ascii=False))
 

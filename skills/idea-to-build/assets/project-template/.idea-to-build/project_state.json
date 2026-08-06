@@ -13,6 +13,8 @@
   "core_frozen": false,
   "core_hash": null,
   "core_confirmation": null,
+  "codex_dispatch_status": "NOT_PLANNED",
+  "codex_dispatch_started_at": null,
   "unresolved_questions": [],
   "accepted_assumptions": [],
   "generated_documents": [],
@@ -20,5 +22,8 @@
   "current_milestone": "Validate",
   "last_verified_commit": null,
   "workstreams": [],
-  "test_commands": []
+  "test_commands": [],
+  "development_mode": "guided_sequential",
+  "planned_tasks": ["TASK-0001"],
+  "current_task_id": null
 }
