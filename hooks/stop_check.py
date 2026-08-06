@@ -23,7 +23,12 @@ def main():
         else:
             try:
                 payload = json.loads(record.read_text(encoding="utf-8"))
-                if payload.get("status") != "passed" or payload.get("exit_code") != 0: issues.append("The latest recorded test result is not passing")
+                if not isinstance(payload, dict): issues.append("The recorded test result must be a JSON object")
+                elif payload.get("schema_version") != 1: issues.append("The recorded test result has an unsupported schema")
+                elif payload.get("project_id") != state.get("project_id"): issues.append("The recorded test result belongs to a different project")
+                elif payload.get("runner") != runtime.TEST_RECORD_RUNNER: issues.append("The recorded test result lacks trusted runner provenance")
+                elif payload.get("command") not in state.get("test_commands", []): issues.append("The recorded test command is no longer declared by the project")
+                elif payload.get("status") != "passed" or payload.get("exit_code") != 0: issues.append("The latest recorded test result is not passing")
                 elif payload.get("git") != runtime.git_snapshot(root): issues.append("The passing test record is stale for the current Git/worktree snapshot")
             except (OSError, json.JSONDecodeError): issues.append("The recorded test result is unreadable")
         normalized = [line[3:].replace("\\", "/") if len(line) > 3 else line for line in changes]

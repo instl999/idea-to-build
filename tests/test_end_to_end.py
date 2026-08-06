@@ -16,7 +16,12 @@ class EndToEndTests(unittest.TestCase):
             self.assertTrue((fx.root / "codex/dispatch.json").is_file())
             self.assertTrue(itb.verify_core(fx.root)["ok"]); self.assertTrue(itb.render_context(fx.root)["ok"])
             package = itb.validate_project_package(fx.root); self.assertTrue(package["ok"], package["errors"])
+            (fx.root / "scripts/research_report.py").unlink()
+            incomplete = itb.validate_project_package(fx.root)
+            self.assertFalse(incomplete["ok"])
+            self.assertIn("Missing required project file: scripts/research_report.py", incomplete["errors"])
             self.assertGreaterEqual(len(list((fx.root / "docs/design").glob("*.md"))), 21)
+            self.assertTrue((fx.root / "docs/design/MCP_INTEGRATION_GUIDE.md").is_file())
             prompt = (fx.root / handoff["prompts"][0]).read_text(encoding="utf-8"); self.assertIn("You own only this workstream", prompt)
         finally: fx.close()
 

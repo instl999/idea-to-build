@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 SCHEMA_VERSION = 1
 CODEX_DISPATCH_ADAPTER = "codex-subagent-worktree-v1"
+TEST_RECORD_RUNNER = "project_state.py:record-test:v1"
 CODEX_DISPATCH_STATUSES = {"NOT_PLANNED", "NOT_NEEDED", "READY", "ACTIVE", "COMPLETE"}
 CODEX_DISPATCH_MANIFEST = "codex/dispatch.json"
 PHASES = (
@@ -45,6 +46,11 @@ CORE_FILES = (
     "docs/core/PROJECT_CHARTER.md", "docs/core/PRODUCT_CONTRACT.md",
     "docs/core/ARCHITECTURE_CONTRACT.md", "docs/core/CONSTRAINTS.md",
     "docs/core/ACCEPTANCE_BASELINE.md",
+)
+PROJECT_RUNTIME_NAMES = (
+    "idea_to_build_lib.py", "project_state.py", "research_report.py", "requirements_check.py",
+    "freeze_core.py", "verify_core.py", "render_context.py", "generate_handoff.py",
+    "codex_dispatch.py", "validate_package.py",
 )
 REQUIREMENT_STATUSES = {"confirmed", "assumed", "open", "conflicting", "deferred", "out_of_scope"}
 REQUIREMENT_SPECS = (
@@ -110,6 +116,7 @@ DESIGN_DOCS = {
     "MVP_ROADMAP.md": ("MVP Roadmap", ("Milestones", "Dependencies", "Deliverables", "Acceptance")),
     "RISK_REGISTER.md": ("Risk Register", ("Product risks", "Technical risks", "Security risks", "Mitigations")),
     "REUSE_MATRIX.md": ("Reuse Matrix", ("Products", "Open source", "Skills and MCP", "SDKs and APIs", "Decision")),
+    "MCP_INTEGRATION_GUIDE.md": ("MCP Integration Guide", ("Recommendation and evidence", "Applicability", "Capability mapping", "Host and transport", "Authentication and data boundaries", "Verification", "Fallback and removal")),
     "CODEX_ORCHESTRATION.md": ("Codex Orchestration", ("Dependency graph", "Thread boundaries", "Merge sequence", "Quality gates")),
 }
 
@@ -1054,7 +1061,6 @@ def initialize_project(template_dir, scripts_dir, target, name, language="en", f
     project_name = validate_single_line("project name", name, 160)
     destination.mkdir(parents=True, exist_ok=True); project_id, created_at = str(uuid.uuid4()), utc_now()
     replacements = {"{{PROJECT_NAME}}": project_name, "{{PROJECT_ID}}": project_id, "{{CREATED_AT}}": created_at}; created = []
-    runtime_names = ("idea_to_build_lib.py", "project_state.py", "research_report.py", "requirements_check.py", "freeze_core.py", "verify_core.py", "render_context.py", "generate_handoff.py", "codex_dispatch.py", "validate_package.py")
     plans = []
     for source in sorted(template.rglob("*")):
         if source.is_symlink(): raise IdeaToBuildError("Template links are not allowed: %s" % source)
@@ -1062,7 +1068,7 @@ def initialize_project(template_dir, scripts_dir, target, name, language="en", f
         relative = source.relative_to(template).as_posix()
         if relative in (".idea-to-build/core.lock.json", ".idea-to-build/requirements_ledger.json"): continue
         plans.append((source, relative, "template"))
-    for name_value in runtime_names:
+    for name_value in PROJECT_RUNTIME_NAMES:
         source = scripts / name_value
         if not source.is_file() or source.is_symlink(): raise IdeaToBuildError("Trusted runtime file is missing or linked: %s" % source)
         plans.append((source, "scripts/" + name_value, "runtime"))
@@ -1094,7 +1100,7 @@ def initialize_project(template_dir, scripts_dir, target, name, language="en", f
 
 def validate_project_package(root):
     base = project_root(root)
-    required = ["AGENTS.md", ".idea-to-build/project_state.json", ".idea-to-build/requirements_ledger.json"] + list(CORE_FILES) + ["docs/live/STATUS.md", "docs/live/ROADMAP.md", "docs/live/BACKLOG.md", "docs/live/DECISIONS.md", "docs/live/RISKS.md", "docs/live/RESEARCH.md", "docs/live/RELEASES.md", "docs/live/CHANGE_REQUESTS.md", "codex/HANDOFF.md", "codex/dispatch.json", "scripts/idea_to_build_lib.py", "scripts/verify_core.py", "scripts/codex_dispatch.py"]
+    required = [".gitignore", "AGENTS.md", ".idea-to-build/project_state.json", ".idea-to-build/requirements_ledger.json"] + list(CORE_FILES) + ["docs/live/STATUS.md", "docs/live/ROADMAP.md", "docs/live/BACKLOG.md", "docs/live/DECISIONS.md", "docs/live/RISKS.md", "docs/live/RESEARCH.md", "docs/live/RELEASES.md", "docs/live/CHANGE_REQUESTS.md", "codex/HANDOFF.md", "codex/dispatch.json"] + ["scripts/" + item for item in PROJECT_RUNTIME_NAMES]
     errors = []
     for item in required:
         try:

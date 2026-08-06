@@ -27,3 +27,5 @@ Before freeze, show a preview and keep `core_frozen: false`. After a human-confi
 ## Development set
 
 Generate a product requirements document, user stories, flows, features, non-functional requirements, data model, API contract, system context, component boundaries, dependencies, security/privacy/permissions, error handling, observability, testing, deployment, rollback, MVP roadmap, risks, reuse matrix, and Codex handoff.
+
+Also generate a conditional MCP integration guide. It records one post-readiness recommendation, including `MCP_NOT_APPLICABLE` when no server belongs in the design.

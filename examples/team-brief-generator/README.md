@@ -2,6 +2,8 @@
 
 This directory is a complete generated Idea-to-Build project fixture. It demonstrates a strict 38-category requirements ledger, a SHA-256 frozen core fixture, 21 review-required design scaffolds, explicit shared-file ownership, and a guided seven-thread Codex plan whose six scoped child tasks are organized into dependency waves.
 
+The fixture also includes a reviewed conditional MCP guide whose decision is `MCP_NOT_APPLICABLE`: its frozen local-only workflow has no agent client or external integration that would justify a server.
+
 All people, names, identifiers, timestamps, approval/actor metadata, decisions, requirements, candidate products, sources, scores, and URLs in this directory are synthetic test data. “Human” confirmation fields demonstrate the file format only; they do not assert that a person approved a real product. The research is intentionally fictional and non-current. Rerun live, privacy-minimized three-layer research before treating the build decision as market evidence.
 
 Validate from this directory:

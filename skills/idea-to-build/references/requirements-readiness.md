@@ -22,3 +22,5 @@ The ledger covers problem, users, triggers, workarounds, painful steps, value, s
 - A recorded adopt/configure/combine/extend/build decision.
 
 Return a report with confirmed items, provisional assumptions, unresolved items, non-blocking items, and blocking items. A numeric completion ratio is supplementary only.
+
+MCP applicability is assessed only after this gate passes. Readiness does not imply that MCP is useful; it only ensures the integration, data, security, deployment, and acceptance facts are mature enough for the conditional assessment in [mcp-integration.md](mcp-integration.md).

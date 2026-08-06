@@ -1,5 +1,5 @@
-import os, unittest
-from _support import ProjectFixture, ROOT, run_hook
+import json, os, subprocess, sys, unittest
+from _support import ProjectFixture, ROOT, itb, run_hook
 
 class HookTests(unittest.TestCase):
     def setUp(self): self.fx = ProjectFixture(); self.fx.freeze()
@@ -8,6 +8,21 @@ class HookTests(unittest.TestCase):
         return {"session_id": "s", "turn_id": "t", "cwd": str(cwd or self.fx.root), "hook_event_name": "PreToolUse", "tool_name": tool, "tool_use_id": "u", "tool_input": {"command": command}, "permission_mode": "default"}
     def assert_blocked(self, tool, command, cwd=None):
         result = run_hook("pre_tool_use.py", self.event(tool, command, cwd)); self.assertIsNotNone(result); self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+    def prepare_development_worktree(self, test_command="python --version"):
+        subprocess.run(["git", "init", "-q"], cwd=str(self.fx.root), check=True)
+        subprocess.run(["git", "config", "user.name", "Idea-to-Build Tests"], cwd=str(self.fx.root), check=True)
+        subprocess.run(["git", "config", "user.email", "tests@example.invalid"], cwd=str(self.fx.root), check=True)
+        subprocess.run(["git", "add", "."], cwd=str(self.fx.root), check=True)
+        subprocess.run(["git", "commit", "-qm", "fixture"], cwd=str(self.fx.root), check=True)
+        state = itb.load_state(self.fx.root)
+        state["current_phase"] = "DEVELOPMENT_ACTIVE"
+        state["test_commands"] = [test_command]
+        itb.save_state(self.fx.root, state)
+        status = self.fx.root / "docs/live/STATUS.md"
+        status.write_text(status.read_text(encoding="utf-8") + "\nDevelopment update.\n", encoding="utf-8")
+        return test_command
+    def stop_event(self):
+        return {"cwd": str(self.fx.root), "hook_event_name": "Stop", "stop_hook_active": False}
     def test_apply_patch_core_blocked(self): self.assert_blocked("apply_patch", "*** Begin Patch\n*** Update File: docs/core/PROJECT_CHARTER.md\n+x\n*** End Patch")
     def test_shell_redirection_core_blocked(self): self.assert_blocked("Bash", "echo changed > docs/core/PROJECT_CHARTER.md")
     def test_move_remove_and_git_restore_blocked(self):
@@ -58,10 +73,41 @@ class HookTests(unittest.TestCase):
         finally: other.close()
 
     def test_structured_dotted_protected_paths_are_blocked(self):
-        for path in (".idea-to-build/core.lock.json", ".codex/hooks/guard.py"):
+        for path in (".idea-to-build/core.lock.json", ".idea-to-build/last_test.json", ".codex/hooks/guard.py"):
             event = self.event("write", ""); event["tool_input"] = {"path": path, "content": "tamper"}
             result = run_hook("pre_tool_use.py", event)
             self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+    def test_direct_test_record_write_is_blocked_but_recorder_execution_is_allowed(self):
+        self.assert_blocked("Bash", "Set-Content .idea-to-build/last_test.json forged")
+        command = 'python scripts/project_state.py record-test --path . --test-command "python --version"'
+        self.assertIsNone(run_hook("pre_tool_use.py", self.event("Bash", command)))
+    def test_stop_blocks_without_a_test_record(self):
+        self.prepare_development_worktree()
+        result = run_hook("stop_check.py", self.stop_event())
+        self.assertEqual(result["decision"], "block")
+        self.assertIn("No test result is recorded", result["reason"])
+    def test_stop_rejects_a_forged_test_record(self):
+        self.prepare_development_worktree()
+        record = self.fx.root / ".idea-to-build/last_test.json"
+        record.write_text(json.dumps({"schema_version": 1, "status": "passed", "exit_code": 0}), encoding="utf-8")
+        result = run_hook("stop_check.py", self.stop_event())
+        self.assertEqual(result["decision"], "block")
+        self.assertIn("different project", result["reason"])
+    def test_stop_accepts_record_test_evidence_for_current_snapshot(self):
+        command = self.prepare_development_worktree()
+        completed = subprocess.run(
+            [sys.executable, str(self.fx.root / "scripts/project_state.py"), "record-test", "--path", str(self.fx.root), "--test-command", command],
+            cwd=str(self.fx.root), text=True, capture_output=True, timeout=15,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        payload = json.loads((self.fx.root / ".idea-to-build/last_test.json").read_text(encoding="utf-8"))
+        self.assertEqual(payload["project_id"], itb.load_state(self.fx.root)["project_id"])
+        self.assertEqual(payload["runner"], "project_state.py:record-test:v1")
+        result = run_hook("stop_check.py", self.stop_event())
+        self.assertTrue(result["continue"])
+    def test_stop_hook_active_is_quiet(self):
+        event = self.stop_event(); event["stop_hook_active"] = True
+        self.assertIsNone(run_hook("stop_check.py", event))
     def test_state_flag_cannot_unfreeze_core(self):
         state_path = self.fx.root / ".idea-to-build/project_state.json"
         import json

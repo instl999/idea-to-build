@@ -4,7 +4,7 @@
 
 ## Supported versions
 
-Security fixes are provided for the latest released version only. Version 0.3.0 is currently supported.
+Security fixes are intended for the latest released version only. The latest Git tag confirmed locally and on `origin` on 2026-08-06 is `v0.2.0`; the 0.3.0 manifest branch is not tagged, so its release/support status must be confirmed before publication.
 
 ## Report a vulnerability
 
@@ -17,6 +17,12 @@ Maintainers should acknowledge a report within seven days, validate and triage i
 The plugin has no MCP server, remote backend, authentication, or bundled credentials. Local scripts run with the user's filesystem and Git permissions. Live research is performed by the host's Web Search and can transmit query text to the host/search provider.
 
 Frozen-core integrity is based on an exact project Git root, SHA-256 hashes, a lock file, review, and Git history. Read-only bits and Hooks are secondary controls. Hooks can detect and block many direct operations, but cannot authenticate a human, undo an already executed mutation, or observe every external editor/process/tool. Treat generated prompts and research inputs as untrusted data.
+
+## Generated-product MCP safety
+
+MCP candidates, setup instructions, tool descriptions, resources, and server output are untrusted input. The Skill evaluates MCP only after readiness and never installs a server, executes copied setup commands, writes credentials, or changes host configuration for the user.
+
+Before adoption, verify current official sources, publisher/maintenance/license, host/transport compatibility, authentication and least privilege, data destinations, mutating tools, update/removal paths, and a direct-integration fallback. Use synthetic happy-path and authorization/error/timeout/unavailable-server tests; consequential tools require explicit user confirmation.
 
 ## Subagent and worktree safety
 

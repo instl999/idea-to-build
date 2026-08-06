@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 PROTECTED_EXACT = {
-    ".idea-to-build/core.lock.json", "agents.md", "scripts/freeze_core.py",
+    ".idea-to-build/core.lock.json", ".idea-to-build/last_test.json", "agents.md", "scripts/freeze_core.py",
     "scripts/verify_core.py", "scripts/idea_to_build_lib.py", "scripts/codex_dispatch.py",
 }
 PROTECTED_PREFIXES = ("docs/core/", "hooks/", ".codex/hooks/")
@@ -22,7 +22,7 @@ MUTATING_COMMAND = re.compile(
 )
 PROTECTED_FRAGMENT = re.compile(
     r"(?i)(?:[A-Za-z]:)?[^\s'\"]*(?:docs[\\/]core(?:[\\/][^\s'\"]*)?|\.idea-to-build[\\/]core\.lock\.json|"
-    r"AGENTS\.md|(?:\.codex[\\/])?hooks[\\/][^\s'\"]*|scripts[\\/](?:freeze_core|verify_core|idea_to_build_lib|codex_dispatch)\.py)"
+    r"\.idea-to-build[\\/]last_test\.json|AGENTS\.md|(?:\.codex[\\/])?hooks[\\/][^\s'\"]*|scripts[\\/](?:freeze_core|verify_core|idea_to_build_lib|codex_dispatch)\.py)"
 )
 
 def read_event():
@@ -161,7 +161,7 @@ def forbidden_request(event, root):
                 core_only = relative.startswith("docs/core/") or relative == ".idea-to-build/core.lock.json"
                 if frozen or not core_only: return "protected path targeted: %s" % relative
     normalized_command = command.replace("\\", "/").lower()
-    always_pattern = r"(?:^|[\s'\"])(?:\.\./)*(?:agents\.md|hooks/|\.codex/hooks/|scripts/(?:freeze_core|verify_core|idea_to_build_lib|codex_dispatch)\.py)"
+    always_pattern = r"(?:^|[\s'\"])(?:\.\./)*(?:agents\.md|hooks/|\.codex/hooks/|\.idea-to-build/last_test\.json|scripts/(?:freeze_core|verify_core|idea_to_build_lib|codex_dispatch)\.py)"
     core_pattern = r"(?:^|[\s'\"])(?:\.\./)*(?:docs/core|\.idea-to-build/core\.lock\.json)"
     if re.search(always_pattern, normalized_command) or (frozen and re.search(core_pattern, normalized_command)):
         return "a protected path is targeted by a mutating command"

@@ -7,6 +7,10 @@
 - Narrowed the Skill to Codex: after the human freezes the product core, a user request to proceed activates native root-agent or subagent execution without polluting the immutable contract with a reversible orchestration choice.
 - Added branch-tip, ancestry, non-empty diff, and file-ownership verification before child commits can be merged.
 - Expanded English and Chinese architecture, privacy, security, change-control, usage, and compatibility documentation.
+- Added a post-readiness MCP applicability gate, four explicit recommendations, existing-versus-custom server review guidance, and a generated MCP integration guide without adding a server or dependency to the Plugin.
+- Hardened Stop evidence with project/runner/declared-command validation, protected Hook-visible record writes, and pass/block/forgery regression tests.
+- Added generated-project ignore rules for local test/guardrail artifacts, environments, caches, and `.env*`, while preserving `.env.example`.
+- Completed Plugin and generated-project required-file validation, synchronized the 0.3.0 project version, and added version/cachebuster regression coverage.
 
 ## 0.2.0 - 2026-08-05
 

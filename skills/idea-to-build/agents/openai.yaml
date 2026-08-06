@@ -1,7 +1,7 @@
 interface:
   display_name: "Idea-to-Build：需求验证与 Codex 开发编排器"
   short_description: "检索现成方案，冻结用户确认的核心契约，并可按授权调度 Codex 子智能体与工作树"
-  default_prompt: "$idea-to-build 我有一个数字产品想法。请先检索现成方案，再判断采用、组合、扩展还是自建；核心契约由我确认冻结后，冻结后在我要求继续开发时，根据实际需要直接使用 Codex 子智能体与工作树。"
+  default_prompt: "$idea-to-build 我有一个数字产品想法。请先检索现成方案，再判断采用、组合、扩展还是自建；需求就绪后仅在确有收益时评估 MCP；核心契约由我确认冻结后，冻结后在我要求继续开发时，根据实际需要直接使用 Codex 子智能体与工作树。"
 
 policy:
   allow_implicit_invocation: true

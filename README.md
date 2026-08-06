@@ -4,19 +4,20 @@
 
 Idea-to-Build is a Codex-only, installable Plugin made of one Skill plus lifecycle Hooks (no MCP server). It researches existing solutions before detailed discovery, turns an approved digital-product idea into a strict 38-item requirements ledger, freezes five human-approved core contracts with SHA-256, and then develops the project with the Codex root agent or native subagents/worktrees according to actual coupling.
 
-Version: `0.3.0`. The local runtime uses only Python 3.9+ standard-library modules and Git. It needs no plugin API key, third-party Python package, or plugin-operated network service. Live solution research still requires the host's Web Search and network access.
+Development manifest version: `0.3.0`; the latest local and remote Git tag confirmed on 2026-08-06 is `v0.2.0`. The local runtime uses only Python 3.9+ standard-library modules and Git. It needs no plugin API key, third-party Python package, or plugin-operated network service. Live solution research still requires the host's Web Search and network access.
 
 ## What it does
 
-The plugin implements a gated 16-phase workflow from `IDEA_RECEIVED` through research, requirements, core review/freeze, document generation, Codex handoff, development, release, and archive.
+The plugin defines a 16-phase workflow from `IDEA_RECEIVED` through research, requirements, core review/freeze, document generation, Codex handoff, development, release, and archive. The manual `transition` command is graph-gated, while several specialized commands update phases under their own checks rather than through one universal state-machine gate.
 
 Its important guarantees are:
 
 - Research direct products, composable alternatives, and reusable open-source/Skill/MCP/SDK/template options before deep requirements work.
 - Return only one declared research decision: `ADOPT_DIRECTLY`, `ADOPT_WITH_CONFIGURATION`, `COMBINE_EXISTING_TOOLS`, `EXTEND_OPEN_SOURCE`, `BUILD_CUSTOM`, `INSUFFICIENT_RESEARCH`, or `NOT_RECOMMENDED`.
-- Fail closed when live evidence is unavailable, conflicting, or contains no verifiable candidates.
+- Fail closed when networking is unavailable, candidates conflict, or the candidate list is empty. The runtime does not yet enforce every richer evidence field required by the research protocol.
 - Require the exact 38-item ledger schema; missing IDs or altered gate metadata cannot bypass readiness.
 - Block freeze while required facts, P0 conflicts, irreversible choices, privacy, security, deployment, or acceptance details remain unresolved.
+- Assess MCP only after readiness: record one not-applicable/use-existing/build-custom/defer recommendation, prefer direct integrations or maintained existing servers, and never install or configure a server for the user.
 - Require an explicit human terminal action for confirmation and freeze. An AI task must never approve, unlock, or refreeze the core.
 - Verify frozen `docs/core/**` against `.idea-to-build/core.lock.json` and route later product changes through change control.
 - Decide whether subagents add value: one effective workstream stays with the root agent; two or more independent non-overlapping workstreams receive scoped prompts, dependency waves, branches, worktrees, tests, and merge order.
@@ -36,7 +37,7 @@ idea-to-build/
 │   ├── assets/project-template/
 │   └── scripts/
 ├── examples/team-brief-generator/       # frozen synthetic fixture
-├── scripts/audit_public_release.py      # worktree and Git-history privacy audit
+├── scripts/audit_public_release.py      # tracked-tree and ref-email privacy audit
 └── tests/
 ```
 
@@ -62,21 +63,19 @@ Register its repository-local marketplace and install the plugin:
 
 ```bash
 codex plugin marketplace add .
-codex plugin add idea-to-build@idea-to-build-local
-codex plugin list --json
+codex plugin marketplace list
 ```
 
-In Codex Desktop, restart if needed, open Plugins, and select the `Idea-to-Build Local` source. In a new task, run `/hooks`, verify the source is this plugin's `hooks/hooks.json`, review the commands and hashes, then trust and enable `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, and `Stop`.
+In ChatGPT Desktop/Codex, restart if needed, open the Plugins Directory, select the `Idea-to-Build Local` source, and install the plugin there. Current OpenAI documentation exposes CLI marketplace management but directs local plugin installation/testing to the Desktop Plugins Directory. In a new task, run `/hooks`, verify the source is this plugin's `hooks/hooks.json`, review the commands and hashes, then trust and enable `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, and `Stop`.
 
-To update:
+To update, pull the repository, restart/refresh the Desktop Plugins Directory source, and reinstall there if the host requires it:
 
 ```bash
 git pull
-codex plugin remove idea-to-build@idea-to-build-local
-codex plugin add idea-to-build@idea-to-build-local
+codex plugin marketplace list
 ```
 
-Review new Hook hashes and use a new task so the updated Skill context is loaded.
+Review new Hook hashes and use a new task so the updated Skill context is loaded. The older `codex plugin add/remove` commands are not documented by the current official packaging page and were not executable in this audit environment.
 
 ## Invoke
 
@@ -98,7 +97,7 @@ cd ../my-product
 python scripts/project_state.py status --path .
 ```
 
-Initialization preflights every output before writing, refuses links/junctions and existing files unless `--force` is explicit, initializes an exact project Git root, and normally creates the skeleton commit. `--skip-initial-commit` is intended for CI/fixtures.
+Initialization preflights managed-output conflicts before writing, refuses links/junctions and existing files unless `--force` is explicit, then initializes an exact project Git root and normally creates the skeleton commit. A later Git/root/commit failure does not roll back files already copied. `--skip-initial-commit` is intended for CI/fixtures.
 
 ### 2. Research and record a build decision
 
@@ -119,6 +118,12 @@ python scripts/requirements_check.py --path . --update-state
 ```
 
 The ledger loader requires all 38 stable IDs and their code-defined category, priority, reversibility, and readiness metadata. A confirmed item must carry a value.
+
+### Conditional MCP assessment before freeze
+
+After readiness passes, the Skill evaluates MCP only when a confirmed AI/agent client needs external tools or resources and an MCP-capable host plus a material advantage over a direct API, SDK, Skill, CLI, or application module are established. It records exactly one of `MCP_NOT_APPLICABLE`, `MCP_USE_EXISTING_SERVER`, `MCP_BUILD_CUSTOM_SERVER`, or `MCP_DEFER`.
+
+When MCP is justified, the user receives current-source review criteria, capability mapping, least-privilege authentication and secret guidance, host/transport assumptions, user-performed installation steps, synthetic and negative tests, observability, disable/rollback, and a non-MCP fallback. A core-affecting decision enters `ARCHITECTURE_CONTRACT.md` before freeze; implementation details remain in `docs/design/MCP_INTEGRATION_GUIDE.md`.
 
 ### 4. Human confirmation and freeze
 
@@ -142,6 +147,8 @@ python scripts/verify_core.py --path .
 Workstream names, goals, dependencies, tests, and paths must be bounded single-line data. Ownership must be repository-relative and cannot include the repository root, `.git`, `.codex`, `.idea-to-build`, Hooks, core files, or protection scripts. Shared foundation files such as package manifests, lockfiles, configuration, and public interfaces need an explicit owner.
 
 Generated design documents are review-required working scaffolds, not completed specifications.
+
+The generated design set includes `MCP_INTEGRATION_GUIDE.md`; it records `MCP_NOT_APPLICABLE` when MCP does not belong in the product rather than treating a server as a default.
 
 ### 6. Use the development guidance
 
@@ -171,7 +178,7 @@ Declare exact commands in `project_state.json` under `test_commands`, then run o
 python scripts/project_state.py record-test --path . --test-command "python -m unittest discover -s tests -v"
 ```
 
-The recorder executes the command without a shell, derives pass/fail from its exit code, and binds the result to the current Git HEAD and worktree digest. The Stop Hook rejects a stale or self-declared result.
+The recorder executes the command without a shell, derives pass/fail from its exit code, and binds the result to the project ID, a recorder marker, the declared command, and the current Git HEAD/worktree digest. Review the mutable state command first: it still runs a program with your permissions. PreToolUse blocks direct Hook-visible writes to `last_test.json`, and Stop rejects wrong-project, undeclared, stale, or failing records. This is procedural provenance, not cryptographic attestation: an external process with filesystem access can still forge the ordinary JSON file.
 
 ## Hook behavior and boundary
 
@@ -195,9 +202,9 @@ python examples/team-brief-generator/scripts/verify_core.py --path examples/team
 python scripts/audit_public_release.py --worktree-only
 ```
 
-The current suite contains 79 unit/integration scenarios covering activation boundaries, schema/state handling, research decisions, exact requirements gates, confirmation/freeze/hash behavior, Hooks, path and prompt hardening, task planning, package validation, and end-to-end generation. CI runs the suite on Linux, Windows, and macOS with Python 3.9 and 3.13.
+The current suite contains 91 unit/integration scenarios covering activation boundaries, schema/state handling, research decisions, exact requirements gates, the post-readiness MCP protocol and guide, confirmation/freeze/hash behavior, all five Hook entrypoints including Stop pass/block/forgery paths, path and prompt hardening, task planning, package validation, and end-to-end generation. The latest local run passed 90 scenarios and skipped one Windows directory-symlink case because that capability was unavailable. CI is configured for Linux, Windows, and macOS with Python 3.9 and 3.13.
 
-Before a public push, run `python scripts/audit_public_release.py` after sanitizing commit metadata. The audit examines tracked text, symbolic links, common secret/private-path patterns, email addresses, and author/committer emails across all refs. It is an additional heuristic control, not a substitute for repository-host secret scanning.
+Before a public push, run `python scripts/audit_public_release.py` after sanitizing commit metadata. The audit examines current tracked text, symbolic links, common secret/private-path patterns, email addresses, and author/committer emails across all refs. It does not inspect untracked files or historical blob contents and is not a substitute for repository-host secret scanning.
 
 The example under `examples/team-brief-generator` is entirely synthetic: names, approval metadata, timestamps, decisions, candidate data, and requirements are fixtures, not real market evidence or a claim that a human approved a real product.
 
@@ -208,17 +215,18 @@ This plugin targets Codex Desktop and Codex CLI. Its end-to-end contract depends
 OpenClaw, generic SkillHub runtimes, ChatGPT managed web surfaces, Claude Code, and other agent hosts are outside the supported runtime boundary. Markdown prompts may be readable elsewhere, but that does not make the adapter installable, safe, or behaviorally compatible there.
 ## Uninstall
 
+Remove the plugin in the Desktop Plugins Directory. If the local marketplace source is no longer needed, remove and verify that source:
+
 ```bash
-codex plugin remove idea-to-build@idea-to-build-local
 codex plugin marketplace remove idea-to-build-local
-codex plugin list --json
+codex plugin marketplace list
 ```
 
 Generated projects are not deleted.
 
 ## Troubleshooting
 
-- Plugin missing: inspect `codex plugin marketplace list --json`, confirm the local marketplace, and restart the host.
+- Plugin missing: inspect `codex plugin marketplace list`, confirm the local marketplace, and restart the host.
 - Skill not invoked: start a new task and use `$idea-to-build` explicitly.
 - Hook skipped: use `/hooks`, review/trust the current hash, and confirm Hooks are enabled by policy/configuration.
 - Research remains insufficient: enable Web Search or provide current, dated official evidence; never edit the conclusion optimistically.

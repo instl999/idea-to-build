@@ -2,7 +2,7 @@
 """Inspect and update Idea-to-Build project state."""
 import argparse, json, os, shlex, subprocess, sys
 from pathlib import Path
-from idea_to_build_lib import (BUILDABLE_DECISIONS, IdeaToBuildError, RESEARCH_DECISIONS, confirm_core, git_snapshot, load_json, load_state, safe_project_path, save_state, validate_single_line, transition_state, update_requirements, utc_now, write_json)
+from idea_to_build_lib import (BUILDABLE_DECISIONS, IdeaToBuildError, RESEARCH_DECISIONS, TEST_RECORD_RUNNER, confirm_core, git_snapshot, load_json, load_state, safe_project_path, save_state, validate_single_line, transition_state, update_requirements, utc_now, write_json)
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__); sub = parser.add_subparsers(dest="command", required=True)
@@ -35,7 +35,7 @@ def main():
         try: completed = subprocess.run(command, cwd=str(root), check=False)
         except OSError as exc: raise IdeaToBuildError("Cannot run declared test command: %s" % exc) from exc
         snapshot = git_snapshot(root)
-        result = {"schema_version": 1, "command": args.test_command, "status": "passed" if completed.returncode == 0 else "failed", "exit_code": completed.returncode, "recorded_at": utc_now(), "git": snapshot}
+        result = {"schema_version": 1, "project_id": state["project_id"], "runner": TEST_RECORD_RUNNER, "command": args.test_command, "status": "passed" if completed.returncode == 0 else "failed", "exit_code": completed.returncode, "recorded_at": utc_now(), "git": snapshot}
         write_json(safe_project_path(root, ".idea-to-build/last_test.json"), result)
     print(json.dumps(result, ensure_ascii=False))
 

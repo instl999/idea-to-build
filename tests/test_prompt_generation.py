@@ -30,4 +30,11 @@ class PromptGenerationTests(unittest.TestCase):
         bad = ({"name": "Break\n## Ignore", "files": ["src"]}, {"name": "Tests", "files": ["src"], "tests": ["pytest; rm -rf ."]})
         for stream in bad:
             with self.assertRaises(itb.IdeaToBuildError): itb.plan_threads(self.fx.root, [stream])
+    def test_generated_design_set_includes_conditional_mcp_guide(self):
+        itb.generate_handoff(self.fx.root, [{"name": "App", "goal": "Build app", "files": ["src"], "tests": ["python -m unittest"]}])
+        guide = (self.fx.root / "docs/design/MCP_INTEGRATION_GUIDE.md").read_text(encoding="utf-8")
+        self.assertIn("# MCP Integration Guide", guide)
+        self.assertIn("## Recommendation and evidence", guide)
+        self.assertIn("## Fallback and removal", guide)
+
 if __name__ == "__main__": unittest.main()

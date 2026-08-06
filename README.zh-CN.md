@@ -4,21 +4,22 @@
 
 `idea-to-build` 是一个 Codex 专用、可安装、由 Skill 与生命周期 Hooks 组成且不包含 MCP server 的 Plugin：先验证数字产品想法和当前替代方案，再把用户决定继续推进的想法收敛为可验收需求、受 SHA-256 保护的核心契约，并按实际耦合度由 Codex 根智能体或原生子智能体/工作树完成开发。
 
-当前版本：`0.3.0`。本地运行时仅依赖 Python 3.9+ 标准库和 Git，不需要第三方 Python 包、API 密钥或插件自建网络服务；实时方案研究需要宿主提供的 Web Search 和网络访问。
+开发中 manifest 版本：`0.3.0`；2026-08-06 本地与远端可确认的最近 Git tag 仍为 `v0.2.0`。本地运行时仅依赖 Python 3.9+ 标准库和 Git，不需要第三方 Python 包、API 密钥或插件自建网络服务；实时方案研究需要宿主提供的 Web Search 和网络访问。
 
 ## 它解决什么问题
 
-这个插件不是一次性 PRD 生成器。它实现一条带门禁的 16 阶段状态机：
+这个插件不是一次性 PRD 生成器。它定义一条 16 阶段工作流；手工 `transition` 命令受转换图门禁约束，但若干专项命令通过各自检查直接更新阶段，因此当前并非单一、统一拦截的状态机：
 
 `IDEA_RECEIVED → SEARCH_REQUIRED → SEARCH_IN_PROGRESS → SOLUTION_FOUND/BUILD_DECISION_REQUIRED → REQUIREMENTS_GATHERING → REQUIREMENTS_CONFLICT/REQUIREMENTS_READY → CORE_REVIEW → CORE_FROZEN → DOCUMENTS_GENERATED → CODEX_HANDOFF_READY → DEVELOPMENT_ACTIVE → CHANGE_REQUESTED/RELEASE_READY → ARCHIVED`
 
 关键约束：
 
-- 先研究、后详细访谈；无实时检索时只能输出 `INSUFFICIENT_RESEARCH`。
+- 先研究、后详细访谈；无实时检索时只能输出 `INSUFFICIENT_RESEARCH`。联网时，运行时仍未强制研究协议要求的全部证据字段。
 - 分三层检索直接产品、组合式替代方案、可复用开源/Skill/MCP/SDK/模板。
 - 方案结论只能是七个枚举之一：`ADOPT_DIRECTLY`、`ADOPT_WITH_CONFIGURATION`、`COMBINE_EXISTING_TOOLS`、`EXTEND_OPEN_SOURCE`、`BUILD_CUSTOM`、`INSUFFICIENT_RESEARCH`、`NOT_RECOMMENDED`。
 - 需求台账固定覆盖 38 类，区分 `confirmed`、`assumed`、`open`、`conflicting`、`deferred`、`out_of_scope`。
 - 百分比不是就绪依据；P0 冲突、不可逆假设、隐私/安全/部署/验收缺失都会阻止冻结。
+- 仅在 readiness 通过后评估 MCP：四选一记录“不适用/使用现有 server/自建 server/延后”，优先直接集成或已维护的现有 server，绝不替用户安装或配置。
 - 冻结必须由人类显式确认并亲自运行命令。AI 不得确认、冻结、解锁或重冻。
 - 冻结后 `docs/core/**` 和 `.idea-to-build/core.lock.json` 永久只读于正常开发流程；变更进入 `docs/live/CHANGE_REQUESTS.md`。
 - 先判断子智能体是否真的有价值：只有一个有效或高耦合工作流时由根智能体直接开发；存在两个以上互不重叠的独立工作流时，才生成子智能体提示词、依赖波次、分支、工作树和合并顺序。
@@ -37,7 +38,7 @@
 - [Web Search 的实时性与缓存语义](https://learn.chatgpt.com/docs/web-search)
 - [Codex ExecPlans](https://developers.openai.com/cookbook/articles/codex_exec_plans)
 
-manifest 故意不声明显式 `hooks` 字段，而使用官方默认发现位置 `hooks/hooks.json`；这样同时符合默认生命周期发现规则和当前官方 plugin validator。
+manifest 故意不声明显式 `hooks` 字段，而使用文档约定的默认发现位置 `hooks/hooks.json`；该布局也通过仓库当前的 package validator。
 
 ## 目录结构
 
@@ -57,6 +58,8 @@ idea-to-build/
 ```
 
 生成项目包含 `AGENTS.md`、5 份核心文档、8 份 live 文档、ExecPlan 目录、Codex handoff/提示目录、状态/需求台账，以及全部项目侧运行脚本。
+
+生成设计集还包含条件式 `MCP_INTEGRATION_GUIDE.md`，用于记录“不适用/使用现有/自建/延后”之一，而不是默认引入 MCP server。
 
 ## 安装
 
@@ -79,8 +82,7 @@ cd idea-to-build
 
 ```bash
 codex plugin marketplace add .
-codex plugin add idea-to-build@idea-to-build-local
-codex plugin list --json
+codex plugin marketplace list
 ```
 
 也可以在 Codex Desktop 重启后打开 **Plugins**，选择 **Idea-to-Build Local** 来源并安装。更新插件时先 `git pull`，再移除并重新添加插件；版本或 Hook 哈希变化后重新审查信任，并在新任务中使用更新后的 Skill。若技能未出现，请重启宿主。
@@ -147,6 +149,12 @@ python scripts/requirements_check.py --path . --update-state
 
 就绪门禁要求关键 P0 项为用户确认、不可逆项不是假设、无 P0 冲突、且已有 configure/combine/extend/build 决策。
 
+### 冻结前的条件式 MCP 评估
+
+readiness 通过后，只有在已确认的 AI/agent 客户端确实需要外部工具或资源、目标宿主当前支持 MCP，且 MCP 相比直接 API、SDK、Skill、CLI 或应用内模块具有实质优势时，Skill 才建议采用。结论必须是 `MCP_NOT_APPLICABLE`、`MCP_USE_EXISTING_SERVER`、`MCP_BUILD_CUSTOM_SERVER` 或 `MCP_DEFER` 之一。
+
+若采用 MCP，指导必须覆盖当前官方来源核验、能力映射、最小权限认证与凭据、宿主/transport 假设、由用户亲自执行的安装步骤、合成与负向测试、可观测性、禁用/回滚和非 MCP 退路。影响系统边界的结论在冻结前进入 `ARCHITECTURE_CONTRACT.md`；实现细节保留在 `docs/design/MCP_INTEGRATION_GUIDE.md`。
+
 ### 4. 由人类确认和冻结
 
 先让 Codex 起草五份核心文档并展示冻结预览。用户确认内容后，必须离开 AI 代执行流程，由人类在终端亲自运行：
@@ -168,7 +176,7 @@ python scripts/render_context.py --path .
 python scripts/verify_core.py --path .
 ```
 
-输出包括 21 份设计/质量/运维文档、`codex/HANDOFF.md` 和每个任务独立可理解的 `codex/prompts/*.md`。交接明确分支、工作树、文件所有权、依赖、启动/完成条件、测试和合并顺序。
+输出包括 22 份设计/质量/运维文档、`codex/HANDOFF.md` 和每个任务独立可理解的 `codex/prompts/*.md`。交接明确分支、工作树、文件所有权、依赖、启动/完成条件、测试和合并顺序。
 
 ### 6. 按需指导实际开发
 
@@ -212,14 +220,9 @@ python -m compileall -q hooks skills/idea-to-build/scripts tests
 python skills/idea-to-build/scripts/validate_package.py --path .
 ```
 
-当前测试覆盖 79 个独立场景，包括：代表性的合法/非法状态迁移、旧 schema 迁移和新 schema 拒绝；联网/离线/冲突研究；38 类需求与就绪门禁；人类确认、换行规范化、hash 漂移；所有 5 类 hook；正反激活；重叠工作流合并；单根智能体与 3-8 个多任务规划；项目初始化、完整冻结、文档生成、交接与包校验。
+当前测试覆盖 91 个独立场景，包括：代表性的合法/非法手工状态转换、旧 schema 迁移和新 schema 拒绝；联网/离线/冲突研究；38 类需求、就绪门禁及 readiness 后的 MCP 协议/指南；人类确认、换行规范化、hash 漂移；实际执行五类 Hook，并覆盖 Stop 的通过、缺记录、伪造记录和递归保护路径；以及激活、工作流合并、任务规划、初始化、冻结、文档生成、交接与包校验。最近本地运行 90 项通过，1 项因 Windows 目录 symlink 能力不可用而跳过。
 
-发布前还应运行已安装的官方校验器：
-
-```text
-quick_validate.py skills/idea-to-build
-validate_plugin.py .
-```
+仓库内的 `validate_package.py` 会检查 marketplace、Hook helper、完整 Skill CLI、项目记忆文档和版本一致性；它仍是源码包校验，不能替代 Codex 宿主安装 smoke test。发布时还应按本仓库使用的官方 `plugin-creator` 与 `skill-creator` 校验器运行检查。
 
 完整冻结示例见 [`examples/team-brief-generator`](examples/team-brief-generator/README.md)。其研究候选是刻意虚构的测试夹具，不代表当前市场事实。
 
@@ -230,17 +233,18 @@ validate_plugin.py .
 OpenClaw、通用 SkillHub 运行时、ChatGPT 托管 Web、Claude Code 和其他智能体宿主不在支持边界内。其他环境也许能读取 Markdown 提示词，但这不表示适配器可以安装、安全运行或保持相同行为。
 ## 卸载
 
+先在 Desktop Plugins Directory 中卸载插件；若不再需要本地 marketplace 来源，再运行：
+
 ```bash
-codex plugin remove idea-to-build@idea-to-build-local
 codex plugin marketplace remove idea-to-build-local
-codex plugin list --json
+codex plugin marketplace list
 ```
 
 这不会删除已经生成的产品项目。若安装来自桌面 Plugins Directory，也应在其中移除插件。个人或团队曾复制 marketplace/plugin 文件时，确认不再被其他插件使用后再手动删除对应副本。
 
 ## 故障排查
 
-- **插件未出现**：确认 `codex plugin marketplace list --json` 能看到 `idea-to-build-local`，检查 `.agents/plugins/marketplace.json`，重启宿主。
+- **插件未出现**：确认 `codex plugin marketplace list` 能看到 `idea-to-build-local`，检查 `.agents/plugins/marketplace.json`，重启宿主。
 - **Skill 不触发**：新建对话并显式使用 `$idea-to-build`；确认插件已启用，且请求不是 frontmatter 中的负面边界。
 - **Hook 被跳过**：运行 `/hooks`，审查并信任当前 hash；检查 Python 命令和 `[features] hooks`。
 - **Windows 找不到 Python**：确认 `py -3 --version` 可运行；非 Windows 应提供 `python3`。
@@ -248,7 +252,7 @@ codex plugin list --json
 - **需求检查返回 3**：读取 JSON 中 `blockers`；解决必填项、不可逆假设、P0 冲突和 build decision。
 - **冻结失败**：确认 Git 身份、干净且可写的仓库、显式人类确认和就绪状态；失败信息不会被吞掉。
 - **核心校验失败**：停止开发，保留证据，在 `docs/live/CHANGE_REQUESTS.md` 记录请求；不要更新 hash 掩盖漂移。
-- **Stop hook 反复提醒**：先在 `project_state.json` 声明精确 `test_commands`，再运行 `python scripts/project_state.py record-test --path . --test-command "<完全一致的命令>"`；该命令会真实执行测试并绑定当前 Git/工作树快照，同时更新 STATUS；hook 会识别 `stop_hook_active`，若仍重复请保存 hook 输入与 guardrail log 作为 bug 证据。
+- **Stop hook 反复提醒**：先在 `project_state.json` 声明精确 `test_commands`，再运行 `python scripts/project_state.py record-test --path . --test-command "<完全一致的命令>"`；该命令会真实执行测试并绑定当前 Git/工作树快照，但不会更新 STATUS；Hook 会校验项目 ID、recorder 标记、声明命令和当前 Git 快照，并阻止可观察的直接写入，但外部进程仍可伪造普通 JSON，因此不是密码学执行证明。hook 会识别 `stop_hook_active`，若仍重复请保存 hook 输入与 guardrail log 作为 bug 证据。
 
 ## 进一步文档
 

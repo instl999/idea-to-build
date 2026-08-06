@@ -11,7 +11,7 @@ This runbook is Codex-specific. Direct subagent dispatch is allowed only when al
 - `codex/dispatch.json`, `codex/HANDOFF.md`, and all prompts are committed.
 - The integration worktree is clean and is the exact Git root.
 - The generated plan recommends subagents.
-- The Codex host exposes `spawn_agent`, `wait_agent`, `send_message`, and `followup_task`.
+- The Codex host exposes the required `spawn_agent` and `wait_agent` tools. `send_message` and `followup_task` are optional conveniences for scoped guidance or correction.
 
 Root-agent versus subagent execution is reversible and is not stored as a frozen product decision. The Skill or an AI task must never run the human confirmation/freeze commands. Missing native tools is a Codex capability gap: preserve the prompts as auditable/manual takeover inputs, but do not claim OpenClaw, SkillHub, or cross-host execution compatibility.
 ## Thread classes
