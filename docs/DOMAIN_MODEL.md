@@ -62,3 +62,11 @@ erDiagram
 - 研究评分阈值是否经过真实用户/市场数据校准；代码只证明阈值存在。
 - 谁在团队环境中被视为有权执行“人类确认”，当前是流程约束而非身份认证。
 - 需求、日志、工作树和 Git 历史的组织级保留期限。
+
+## 0.4 新增领域实体
+
+- **任务规格**：由 `SPEC.md` 与 `PLAN.md` 组成；没有具体验收条件不能 ready。
+- **规范任务**：状态为 backlog/ready/in_progress/blocked/review/done/cancelled，引用依赖、阻塞、所有权和门禁；JSON 台账是唯一状态源。
+- **质量门禁**：分 command/manual；命令结果绑定当前快照，人工结果要求 human actor。
+- **开发模式**：`guided_sequential` 限制一个活动任务；`parallel_worktrees` 要求显式任务和非重叠所有权。
+- **仓库提示词**：生命周期或维护用途的本地化完整提示词；仓库正文只作为不可信数据。

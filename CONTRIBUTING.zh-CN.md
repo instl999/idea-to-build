@@ -33,3 +33,7 @@ python scripts/audit_public_release.py --worktree-only
 使用 GitHub no-reply 或项目专用公开邮箱。不要提交秘密、个人记录、私人绝对路径、机密研究文字、`.env`、生成日志或真实客户/用户夹具。示例必须合成，Web Search 查询必须最小化。
 
 PR 应说明问题、安全/隐私影响、方案、测试、兼容性、文档和剩余风险。安全问题按 [SECURITY.zh-CN.md](SECURITY.zh-CN.md) 私下报告，不要公开提交利用细节。
+
+## 仓库记忆变更
+
+任务状态、门禁 schema、提示词、上下文注入、Stop、迁移或调度属于兼容与安全敏感修改。必须记录威胁、失败/恢复和旧项目行为，补成功与拒绝回归测试，保持中英文公开文档语义同步，更新 `CHANGELOG_AI.md` 与 `PROJECT_STATUS.md`，并确认冻结示例的核心/锁字节未改变。

@@ -116,3 +116,9 @@ python scripts/audit_public_release.py
 ### 新增数据库、API、认证或公共类型
 
 当前不存在这些子系统。新增前必须先在 `docs/DECISIONS.md` 记录决定，在 `docs/OPEN_QUESTIONS.md` 解决所有权、权限、数据保留、迁移、兼容和回滚问题，并补充集成/安全测试；不能把它当作普通局部改动。
+
+## 0.4 开发循环
+
+开发新能力时先为它建立规范任务和具体验收，再用 `memory_prompts.py show --kind start-task` 开始；结束前运行配置的质量门禁，更新 PLAN/STATUS，并把任务移到 review。只有用户完成人工门禁后才能 done。维护任务/质量/runtime 时同步源脚本与冻结示例复制件，但不得修改示例 `docs/core/**` 和 `core.lock.json`。
+
+修改旧项目迁移时必须验证 dry-run、非覆盖、兼容 runtime、失败回滚和核心字节不变。新增质量命令前审查可执行文件与参数；配置来源明确不代表命令天然可信。

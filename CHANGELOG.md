@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0 - 2026-08-06
+
+- Added four-layer repository memory: mutable working rules/map, per-task SPEC/PLAN, canonical task ledger/projection, and explicit command/manual quality gates.
+- Added task, quality, localized prompt, development-mode, bounded-context, task-aware Stop, and non-overwriting migration CLIs.
+- Made guided sequential development the default while retaining canonical task-bound Codex subagent/worktree orchestration for advanced parallel work.
+- Added an old-runtime compatibility loader, migration rollback, current-snapshot evidence, output bounds/redaction, path/ownership checks, and human-only acceptance enforcement.
+- Updated the synthetic frozen example without changing its frozen core or lock; added bilingual repository-memory, architecture, privacy, security, change-control, contribution, and usage documentation.
+- Expanded regression coverage for task readiness/state/dependencies, prompt recovery, quality safety/staleness/manual gates, Hook completion, modes, migration, and package integrity.
+
 ## 0.3.0 - 2026-08-05
 
 - Added on-demand development orchestration: one effective workstream stays with the root agent, while independent workstreams receive scoped subagent prompts and dependency waves.

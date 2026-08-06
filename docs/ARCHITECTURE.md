@@ -114,3 +114,11 @@ There are no background workers, queues, caches, or scheduled jobs. All Python w
 - Lifecycle Hooks observe only events delivered by the host and cannot police external editors/processes.
 - Native Codex host execution is not exercised by CI; Python tests validate the adapter contract and Git behavior.
 - The current source has no automatic dispatch-finalization transition to `COMPLETE`.
+
+## Repository-memory architecture (0.4)
+
+After core freeze, the runtime adds four coordinated layers: protected rules/core, per-task SPEC/PLAN, canonical `.idea-to-build/tasks.json`, and configured quality gates with snapshot-bound evidence. `docs/live/TASKS.md` is generated from JSON and never becomes a second state source. `render_context()` selects one task and emits bounded, data-delimited summaries; parallel mode refuses to guess. Stop uses a lightweight path for memory-only maintenance and a task-aware path for substantive changes.
+
+`guided_sequential` plans one root task without mandatory worktrees. `parallel_worktrees` derives child work only from canonical ready tasks, dependency waves, and non-overlapping ownership. Handoff and dispatch bind each child to task ID, SPEC, PLAN, quality gates, prompt hash, branch, worktree, and owned paths.
+
+Older project-local runtimes remain readable. The additive migrator never overwrites them; when they lack 0.4 APIs it adds a versioned compatibility runtime used only by new memory CLIs. Installed Hooks continue to import only the installed Plugin runtime.

@@ -36,3 +36,15 @@
 - 兼容与恢复：未改变阶段、38 项需求、冻结核心或 dispatch schema。旧 `last_test.json` 会失败关闭，重新执行 state 中已审查的 `project_state.py record-test` 即可恢复；既有生成项目不会自动获得 `.gitignore` 或新运行时，需要显式升级/复制。
 - 文档与元数据：同步中英文 README、架构、隐私及项目记忆；Skill agent 元数据补充 readiness 后条件式 MCP；权威运行时修改同步到冻结示例副本。
 - 验证结果：完整 `unittest` 共 91 项，90 项通过、1 项因 Windows 目录 symlink 能力跳过；`compileall`、仓库 package validator、官方 Plugin/Skill validator、冻结示例 hash 和公开发布脱敏审计全部通过。
+
+## 2026-08-06 — 增加四层仓库记忆与规范任务开发流程
+
+- 任务目标：在现有研究、需求台账、人工冻结和 Codex handoff 基础上，实现适合普通用户长期开发的项目级、任务级、执行质量级和可恢复提示词四层记忆，并提供安全的旧项目增量迁移。
+- 威胁与失败模式：任务文本、研究和提示词可能包含注入；任务路径可能越界或相互重叠；命令型门禁可能被 shell 元字符放大；质量结果可能陈旧或被冒充；迁移可能覆盖现有项目或冻结核心；示例运行时可能与权威源漂移；未知 schema 可能被错误解释。
+- 主要实现：新增 `.idea-to-build/tasks.json`、`quality_gates.json`、任务 SPEC/PLAN、记忆地图、工作规则、任务/质量投影、生命周期与维护提示词；新增 `task_state.py`、`quality_gate.py`、`memory_prompts.py`、`migrate_project.py` 和兼容运行时加载器；扩展状态字段、Stop Hook、上下文注入、包校验、模板和冻结示例。
+- 调度适配：默认顺序模式只允许一个活动任务；并行模式只从规范任务台账派生子智能体、路径所有权、依赖波次、SPEC/PLAN 和质量门禁。工作树创建结果回传规范任务 ID，依赖未完成时可进入 ready，但不能开始实施。
+- 安全与恢复：未知 schema、越界/链接路径、重叠所有权、非具体验收、陈旧门禁和非 human 人工验收均失败关闭；命令不用 shell；迁移预检后原子添加且失败回滚，不覆盖变量文件、冻结核心或锁文件，也不重新冻结。
+- 文档：重写中英文 README；新增中英文仓库记忆说明；同步架构、安全、隐私、变更控制、贡献、索引、领域/数据/API、开发/测试/部署、决定、技术债务、待确认问题、变更日志和项目状态。
+- 兼容性：保持 Python 3.9+ 标准库、Git、状态 schema 1、任务/质量/dispatch schema 1 和既有冻结 hash。旧项目可仅添加缺失资产；旧 `idea_to_build_lib.py` 保持不变，由独立兼容副本为新 CLI 提供 0.4 能力。
+- 验证结果：112 项 `unittest` 中 111 通过、1 项因 Windows 目录符号链接能力跳过；`compileall`、包校验、冻结示例校验、公开发布审计、Plugin validator 和设置 `PYTHONUTF8=1` 的 Skill validator 均通过。示例冻结核心和锁文件没有被修改。
+- 遗留事项：真实 Codex 宿主 smoke test、adapter finalize/更强波次强制、独立 JSON Schema、签名/provenance 和 0.4.0 远程发布仍未实现或未确认，已保留在技术债务与待确认问题中。

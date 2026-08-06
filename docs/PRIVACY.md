@@ -41,3 +41,7 @@ python scripts/audit_public_release.py
 ```
 
 The helper is heuristic: its full mode scans current tracked text plus author/committer emails across refs, not untracked files or historical blob contents. Also enable host secret scanning/push protection and conduct human review. If sensitive data reaches GitHub, revoke/rotate it immediately, follow the host removal procedure for Git objects/caches/forks, and notify affected parties according to policy/law.
+
+## Repository-memory data
+
+Task titles, SPEC/PLAN, working rules, status, gate instructions, and bounded command output remain local repository data. `last_quality.json` is ignored by default. Output excerpts are capped and redact common token/secret assignments, but redaction is heuristic: do not run gates that print credentials or personal data. Prompt/context generation includes only the selected task and summaries; it excludes full logs, all tasks, and external research bodies.

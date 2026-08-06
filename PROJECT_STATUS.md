@@ -1,79 +1,66 @@
 # 项目状态
 
 更新时间：2026-08-06（Asia/Shanghai）
-代码基线：本地 `main`；远端发布状态见下文
+代码基线：本地 `main`；0.4.0 变更尚未推送到 `origin/main`
+最新已知发布标签：`v0.2.0`
 
 ## 当前阶段
 
-仓库处于 0.3.0 Codex 原生开发编排、条件式 MCP 指导与本轮可靠性改进已合并本地 `main` 后的发布准备阶段。`origin/main` 与已确认 tag 仍停留在 `v0.2.0` 对应基线；2026-08-06 的只读 `git ls-remote --heads --tags origin` 仍只显示 `main` 和 `v0.2.0`，是否另有 Plugins Directory 发布无法从仓库确认。
+仓库中的 0.4.0 功能实现与文档已经完成，正在等待本地提交。该版本在原有 Idea-to-Build 研究、38 项需求门禁、人工确认与冻结、Codex handoff 和 worktree 调度基础上，新增面向长期开发的四层仓库记忆、规范任务生命周期、质量门禁记录、可恢复提示词和增量迁移。
 
-## 已实现的主要功能
+Plugin 仍然只面向 Codex Desktop/CLI；不支持 OpenClaw、通用 SkillHub 或 Claude Code。运行时保持 Python 3.9+ 标准库和 Git，无数据库、认证、公共 HTTP API、MCP server、托管后端或第三方 Python 依赖。
 
-- Codex Plugin、单 Skill、五类生命周期 Hooks 和仓库本地 marketplace。
-- 16 个阶段定义、手工转换图、方案研究和 7 类决策；专项命令尚未统一通过转换图。
-- 固定 38 项需求台账及严格 readiness 门禁。
-- readiness 通过后的条件式 MCP 评估、四选一推荐、现有/自建 server 安全指导和生成的 `MCP_INTEGRATION_GUIDE.md`；Plugin 自身仍无 MCP server。
-- 五份核心契约的人类确认、SHA-256 冻结、精确 Git 根、提交和可选 tag。
-- 22 份设计骨架、live 文档模板、Codex handoff、自包含 prompt 和 dispatch manifest。
-- 单根智能体/多子智能体按需规划、依赖波次、同级 worktree、结果所有权验证和受控 merge。
-- Python 标准库测试、三平台 CI 配置、包校验、冻结示例和公开发布脱敏审计。
-- 英文/中文 README、安全、隐私、架构、变更控制和贡献说明。
+## 0.4.0 已实现能力
 
-## 部分实现的功能
+- 第一层“项目长期记忆”：`AGENTS.md`、冻结 `docs/core/**`、`docs/live/MEMORY_MAP.md`、`docs/live/WORKING_RULES.md`、状态、决策、风险、变更请求和 backlog。
+- 第二层“任务级记忆”：`.idea-to-build/tasks.json` 是规范台账，`docs/live/TASKS.md` 是可重建的人类视图，每个任务有独立 `SPEC.md` 与 `PLAN.md`。
+- 第三层“执行与质量记忆”：`.idea-to-build/quality_gates.json` 定义门禁，忽略提交的 `last_quality.json` 记录当前快照结果；命令门禁和人工验收分离。
+- 第四层“可恢复提示词”：启动、恢复、收尾以及规则、规格、任务、质量和全局审计提示词，按项目语言输出并限定读取范围。
+- 任务状态机：`draft → ready → in_progress → review → done`，支持阻塞、重开、依赖、路径所有权和具体验收标准校验。
+- 默认 `guided_sequential` 模式一次只允许一个活动任务；显式 `parallel_worktrees` 模式从规范任务台账生成无重叠所有权、依赖波次和 Codex worktree manifest。
+- `task_state.py`、`quality_gate.py`、`memory_prompts.py` 和 `migrate_project.py` 提供完整本地 CLI。
+- 旧项目迁移只补缺失文件，不覆盖已有变量文件、不修改冻结核心、不重写锁文件、不重新冻结；旧运行时通过独立兼容副本承载新 CLI。
+- Hook 注入只加载已安装 Plugin 的可信运行时；项目文本、研究结果、生成提示词和任务字段均按不可信输入处理。
+- 中英文 README、仓库记忆、架构、安全、隐私、变更控制和贡献文档已同步到 0.4.0。
 
-- Host 集成：五类 Hook 和子智能体协议的主要路径已由 Python 模拟测试；仍没有真实 Codex 宿主自动端到端 CI。
-- 发布流程：已有检查清单和 CI，但没有自动发布、签名、provenance 或 0.3.0 tag。
-- schema 演进：能补部分旧字段、拒绝未来版本，但字段校验不完整，也没有独立 schema 和升级/降级工具。
-- 可观测性：有本地 guardrail/test 记录，没有集中日志、指标或告警。
+## 兼容与安全边界
 
-## 明显未实现的功能
+- 状态、任务、质量和 dispatch 的未知或更高 schema 均失败关闭。
+- `docs/core/**` 和 `.idea-to-build/core.lock.json` 冻结后不可由 AI 修改；变更只能记录到 `docs/live/CHANGE_REQUESTS.md`。
+- 路径必须仓库相对且规范化，拒绝链接/联接点逃逸；并行任务不能拥有重叠写入范围。
+- 质量命令使用参数数组或受限解析，不通过 shell 执行；项目文档中的命令不会被自动发现或执行。
+- 人工质量门禁必须由 human actor 以精确确认语句接受；Hook、manifest hash、状态和本地记录是流程控制，不是密码学身份或独立安全边界。
+- JSON 台账使用临时文件替换；Markdown 投影视为可重建视图，不宣称跨文件事务性。
 
-- `codex_dispatch_status=COMPLETE` 的 finalize 命令和自动进入 `RELEASE_READY` 的门禁。
-- adapter 级的当前 wave、依赖已合并和 merge order 持久化/强制门禁；目前主要依赖宿主协议。
-- lint、format、静态 typecheck、覆盖率和性能基准。
-- OpenClaw、通用 SkillHub、Claude Code 等跨宿主适配；当前明确不支持。
-- Plugin 自营的数据库、认证、公共 HTTP API、MCP server、托管后端和遥测；这些仍是当前非目标。
+## 已验证结果
 
-## 当前进行中的工作
+2026-08-06 在 Windows 本地完成：
 
-2026-08-06 已完成整体代码审查与改进：统一 0.3.0 版本并兼容官方 cachebuster token、补全 Plugin/生成项目必需文件校验、为生成项目加入本地忽略规则、强化测试记录的流程性来源校验，并覆盖 Stop Hook 成功/拒绝路径。完整 91 项测试中 90 项通过、1 项因 Windows symlink 能力跳过。
+- `python -m unittest discover -s tests -v`：112 项，111 通过，1 项因目录符号链接能力不可用而跳过，0 失败。
+- `python -m compileall -q hooks skills/idea-to-build/scripts tests scripts`：通过。
+- `python skills/idea-to-build/scripts/validate_package.py --path .`：通过。
+- `python examples/team-brief-generator/scripts/verify_core.py --path examples/team-brief-generator`：通过，冻结 hash 为 `409bf7fe207f8da0d0e50eff1f0c2ff16b1eb70720b89cfdabd2e742281e7b73`。
+- `python scripts/audit_public_release.py --worktree-only`：通过。
+- 官方 Plugin validator：通过。
+- 官方 Skill quick validator：在 `PYTHONUTF8=1` 下通过；Windows 默认 GBK 运行上游脚本会因其未显式指定 UTF-8 而报解码错误。
+- 冻结示例的 `docs/core/**` 与 `.idea-to-build/core.lock.json` 相对 Git 基线无差异。
+- 示例 dispatch 生成两波：第一波 `TASK-0001`；第二波 `TASK-0002`、`TASK-0003`、`TASK-0004`。
+- 示例 `start-task` 提示词能够恢复规范任务、SPEC、PLAN、质量门禁、冻结边界和执行前检查。
 
-## 阻塞项
+## 尚未实现或仍属部分实现
 
-- 正式发布 0.3.0 前仍需确认 tag、远端 push/发布渠道与 Plugins Directory 状态；本地版本元数据已统一。
-- 真实 Codex 宿主兼容性、最低版本和发布 smoke test 尚待确认。
+- 没有真实 Codex 宿主自动化端到端 CI；Hook、subagent 和 worktree 主路径由 Python 集成测试覆盖。
+- 没有自动发布、签名、provenance、0.4.0 tag 或 Plugins Directory 发布确认。
+- adapter 尚未提供独立 finalize 命令，也未把所有 wave/merge 顺序约束提升为不可绕过的宿主安全边界。
+- 没有独立 JSON Schema、降级工具、集中日志、指标、告警、覆盖率或性能基准。
+- 项目运行时仍在 Plugin 源、模板、示例和旧项目兼容副本之间复制，后续版本需要继续防止漂移。
 
-## 已知问题和技术债务摘要
-
-- Hook 是纵深防御而非沙箱；外部进程仍可绕过。
-- 运行时在源、示例和用户生成项目中存在复制件，可能漂移。
-- Git 子进程无统一 timeout。
-- JSON 契约无独立 schema。
-- `last_test.json` 已有 project/runner/command/snapshot 校验和 Hook 可见写保护，但外部进程仍可伪造普通 JSON。
-- 研究证据字段和阶段转换的运行时校验仍不完整；package 显式必需文件已补全，但内容级完整性仍有限。
-- MCP 推荐目前由 Skill 协议和人审保证，没有 state/ledger 字段或运行时命令证明真实会话完成了四选一判断。
-- 发布审计与 package secret 检查都是启发式。
-- CI Actions 使用主版本 tag 而非 commit SHA。
-
-详见 [`docs/KNOWN_ISSUES_AND_TECH_DEBT.md`](docs/KNOWN_ISSUES_AND_TECH_DEBT.md)。
+详见 [`docs/KNOWN_ISSUES_AND_TECH_DEBT.md`](docs/KNOWN_ISSUES_AND_TECH_DEBT.md) 与 [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md)。
 
 ## 推荐下一步
 
-1. 人工回答 [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md) 中的发布版本、Codex 最低版本、调度完成/波次强制语义和旧 SkillHub 处置问题。
-2. 决定测试门禁是否需要签名/宿主回执等强于当前流程性 provenance 的证明。
-3. 统一阶段转换与研究输入 schema，并补 Stop Hook 的 stale/STATUS/非开发阶段测试。
-4. 决定 0.3.0 的 tag、push、Plugins Directory 与升级/回滚策略。
-5. 建立真实 Codex 安装/Hook/子智能体 smoke test 清单或受控集成测试。
+在一个新的 Codex 任务中加载刚刷新的本地 Plugin，并用冻结示例执行一次真实宿主 smoke test：
 
-## 最近的重要变化
-
-- `3a5edd0`：加入 Codex 原生开发编排、hash 绑定 dispatch manifest、worktree/commit 验证和 Codex-only 定位。
-- 2026-08-06 本轮审查：合并 readiness 后 MCP 四选一指导，并修复版本漂移、包完整性、生成项目忽略规则与 Stop 测试证据门禁；没有改变阶段/schema/38 项台账或新增依赖。
-- `5f1ad20`（`v0.2.0`）：强化 Hook/路径/Git/readiness/测试记录和双语公开文档。
-- `e699cb7`：加入仓库本地 marketplace 和使用指南。
-- `fd8361f`：加入 guardrail 测试和冻结示例。
-- `3b7a479`：初始工作流脚手架。
-
-## 仍待确认的文档项
-
-重点包括正式目标用户/KPI、0.3.0 发布状态、调度完成规则、最低 Codex 版本、数据保留、团队确认权限、远端安全配置和旧 SkillHub 发布物处置。
+```text
+使用 idea-to-build，在 examples/team-brief-generator 中为 TASK-0001 生成 start-task 指导；只复述上下文和计划，不修改代码。
+```

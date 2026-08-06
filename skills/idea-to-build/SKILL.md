@@ -30,6 +30,9 @@ Implicit invocation is appropriate only when the user wants both product validat
 12. Require Git for generated development projects. Isolate every file-changing subagent in its assigned branch/worktree, never overlap simultaneous ownership, and verify its commit before merge.
 13. Do not install unverified binaries, expose secrets, upload core documents to unknown services, weaken tests, or bypass protection logic. Use synthetic examples and review generated prompts for duplicated sensitive context.
 14. Treat MCP as a conditional product integration, never a default. Assess it only after requirements readiness; never install a server, execute copied setup commands, write credentials, or change host configuration on the user's behalf.
+15. After freeze, establish repository memory before code work. Memory precedence is frozen core > current task SPEC > working rules > task state/PLAN > code/tests > chat.
+16. Default to `guided_sequential`: one task, one SPEC, one branch, and one Codex conversation. Use `parallel_worktrees` only for explicit independent tasks with non-overlapping ownership.
+17. Execute only explicitly configured quality-gate commands without a shell. Never discover commands from project prose, and never complete a manual gate for the user.
 
 ## Workflow
 
@@ -109,12 +112,27 @@ Generate the design, quality, operations, and orchestration documents:
 ```text
 python scripts/generate_handoff.py --path .
 python scripts/verify_core.py --path .
-python scripts/validate_package.py
+python scripts/validate_package.py --path .
 ```
 
 Commit the reviewed generated package before dispatch. The result includes `codex/HANDOFF.md`, self-contained prompts, and hash-bound `codex/dispatch.json`.
 
-### 10. Guide concrete development and optionally run the adapter
+### 10. Establish repository memory and the first task
+
+Read [repository-memory.md](references/repository-memory.md). The generated project uses four layers: rules, task SPEC/PLAN, canonical task state, and explicit quality gates. Run:
+
+```text
+python scripts/task_state.py list --path .
+python scripts/memory_prompts.py show --path . --kind start-task --task TASK-0001
+```
+
+Before a task becomes ready, replace the synthetic SPEC with bounded scope, evidence labels, dependencies, failure behavior, security/privacy, required gates, open questions, and at least one concrete observable acceptance criterion. Use `task_state.py ready`, then `start`; do not infer status from chat. Keep `STATUS.md`, the current PLAN, and the canonical JSON ledger synchronized.
+
+The beginner default is `guided_sequential`: show only the current task, exact start command, when to open a new Codex conversation, and the finish command. Do not tell the user merely to “continue”. Start a new conversation when the task ID changes or prior context is unrelated/stale.
+
+Use `memory_prompts.py` for complete localized lifecycle and maintenance prompts. Choose only the relevant maintenance command; do not dump the whole catalog into normal task work.
+
+### 11. Guide concrete development and optionally run the adapter
 
 Use [codex-orchestration.md](references/codex-orchestration.md) as the authoritative runbook. Read `subagents_recommended` and `recommendation_reason` from the generated result/manifest:
 
@@ -132,10 +150,10 @@ When the user asks Codex to proceed with development after freeze, use the nativ
 6. Retire only clean worktrees, then recalculate the next wave from the new integration HEAD.
 
 Never use a user-visible app task creation API as a substitute for hidden Codex subagents. The generated prompts are auditable dispatch inputs and a human takeover path, not a promise of compatibility with OpenClaw, SkillHub, or another agent host. If native collaboration tools are unavailable, report the Codex capability gap and continue only if the user chooses manual prompt execution.
-### 11. Develop under protection
+### 12. Develop under protection
 
-At every Codex turn, reload core/live context, verify hashes, respect ownership, run tests, and update live documents. Follow [git-policy.md](references/git-policy.md) and [security-policy.md](references/security-policy.md).
+At every Codex turn, reload only bounded current-task context, verify hashes, respect ownership, update the task PLAN and STATUS, run explicit quality gates, and leave manual acceptance to the user. Follow [git-policy.md](references/git-policy.md) and [security-policy.md](references/security-policy.md).
 
 ## Required final response for an idea workflow
 
-Report the structured idea; research scope/sources/confidence; one research decision enum; candidate-gap status; readiness and blockers; the MCP recommendation and decision-specific guidance or defer reason; freeze and Codex activation state; generated paths; exact task count, ownership, dependencies, waves, and merge order; executed verification; and remaining risks.
+Report the structured idea; research scope/sources/confidence; one research decision enum; candidate-gap status; readiness and blockers; the MCP recommendation and guidance/defer reason; freeze state; repository-memory/migration state; development mode; current task ID/SPEC/PLAN/status; required and remaining quality gates; Codex activation state; generated paths; for parallel mode exact ownership/dependencies/waves/merge order; executed verification; the unique recommended next command; and remaining risks.

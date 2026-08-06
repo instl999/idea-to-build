@@ -50,3 +50,16 @@
 - `project_state.json` 的 `core_frozen` 是缓存式字段，安全判断必须以非模板锁和重新计算 hash 为准。
 - 运行时同时存在源文件、初始化后的项目副本和冻结示例副本，发布时必须校验同步。
 - Git 历史会永久保留误提交的敏感信息；删除工作树文件不能完成脱敏。
+
+## 0.4 记忆数据
+
+| 路径 | 角色 | 一致性/保留 |
+| --- | --- | --- |
+| `.idea-to-build/tasks.json` | 规范任务台账 | schema 1；原子替换；未来 schema 失败关闭 |
+| `docs/live/TASKS.md` | 台账的人类投影 | 可由 `sync-docs` 幂等重建，不是状态源 |
+| `.idea-to-build/quality_gates.json` | 显式命令/人工门禁配置 | schema 1；未知门禁和不安全命令拒绝 |
+| `.idea-to-build/last_quality.json` | 当前任务/快照质量结果 | 可变且默认忽略；受限输出；不是签名证明 |
+| `specs/<TASK-ID>/SPEC.md` / `PLAN.md` | 任务验收与实施事实 | 可变，但受冻结核心优先级约束 |
+| `project_state.json` 的 `development_mode`、`planned_tasks`、`current_task_id` | 开发选择与当前任务 | schema 仍为 1 的加法兼容字段 |
+
+迁移器只新增缺失文件。旧库缺 API 时新增版本化兼容 runtime，不覆盖原 runtime；迁移失败会删除本次已创建文件。JSON 台账是原子事实源，Markdown 投影发生失败时可从 JSON 重建，不宣称跨文件事务。

@@ -18,6 +18,9 @@ class HookTests(unittest.TestCase):
         state["current_phase"] = "DEVELOPMENT_ACTIVE"
         state["test_commands"] = [test_command]
         itb.save_state(self.fx.root, state)
+        (self.fx.root / ".idea-to-build/tasks.json").unlink()
+        (self.fx.root / ".idea-to-build/quality_gates.json").unlink()
+        source = self.fx.root / "src/change.py"; source.parent.mkdir(); source.write_text("value = 1\n", encoding="utf-8")
         status = self.fx.root / "docs/live/STATUS.md"
         status.write_text(status.read_text(encoding="utf-8") + "\nDevelopment update.\n", encoding="utf-8")
         return test_command
@@ -73,10 +76,13 @@ class HookTests(unittest.TestCase):
         finally: other.close()
 
     def test_structured_dotted_protected_paths_are_blocked(self):
-        for path in (".idea-to-build/core.lock.json", ".idea-to-build/last_test.json", ".codex/hooks/guard.py"):
+        for path in (".idea-to-build/core.lock.json", ".idea-to-build/last_test.json", ".idea-to-build/last_quality.json", ".codex/hooks/guard.py", "scripts/_memory_runtime.py", "scripts/idea_to_build_memory_runtime.py"):
             event = self.event("write", ""); event["tool_input"] = {"path": path, "content": "tamper"}
             result = run_hook("pre_tool_use.py", event)
             self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+    def test_manual_quality_acceptance_is_human_only_but_gate_run_is_allowed(self):
+        self.assert_blocked("Bash", 'python scripts/quality_gate.py accept-manual --path . --task TASK-0001 --gate user-acceptance --confirmation "I accept this task result"')
+        self.assertIsNone(run_hook("pre_tool_use.py", self.event("Bash", "python scripts/quality_gate.py all --path . --task TASK-0001")))
     def test_direct_test_record_write_is_blocked_but_recorder_execution_is_allowed(self):
         self.assert_blocked("Bash", "Set-Content .idea-to-build/last_test.json forged")
         command = 'python scripts/project_state.py record-test --path . --test-command "python --version"'
@@ -105,6 +111,25 @@ class HookTests(unittest.TestCase):
         self.assertEqual(payload["runner"], "project_state.py:record-test:v1")
         result = run_hook("stop_check.py", self.stop_event())
         self.assertTrue(result["continue"])
+    def test_stop_allows_memory_only_maintenance_without_full_quality_run(self):
+        subprocess.run(["git", "init", "-q"], cwd=str(self.fx.root), check=True)
+        subprocess.run(["git", "config", "user.name", "Idea-to-Build Tests"], cwd=str(self.fx.root), check=True)
+        subprocess.run(["git", "config", "user.email", "tests@example.invalid"], cwd=str(self.fx.root), check=True)
+        subprocess.run(["git", "add", "."], cwd=str(self.fx.root), check=True); subprocess.run(["git", "commit", "-qm", "fixture"], cwd=str(self.fx.root), check=True)
+        state = itb.load_state(self.fx.root); state["current_phase"] = "DEVELOPMENT_ACTIVE"; itb.save_state(self.fx.root, state)
+        rules = self.fx.root / "docs/live/WORKING_RULES.md"; rules.write_text(rules.read_text(encoding="utf-8") + "\n- Clarified mutable rule.\n", encoding="utf-8")
+        result = run_hook("stop_check.py", self.stop_event()); self.assertTrue(result["continue"]); self.assertIn("memory-maintenance", result["systemMessage"])
+
+    def test_stop_blocks_substantive_change_without_current_quality(self):
+        task = itb.get_task(self.fx.root, "TASK-0001"); spec = self.fx.root / task["spec_path"]
+        spec.write_text(spec.read_text(encoding="utf-8").replace("The user can replace this example with one observable criterion and `task_state.py ready` accepts the reviewed SPEC.", "The changed source is covered by a passing configured command and review evidence."), encoding="utf-8")
+        tasks = itb.load_tasks(self.fx.root); tasks["tasks"][0]["owned_paths"] = ["src"]; itb.save_tasks(self.fx.root, tasks); itb.transition_task(self.fx.root, "TASK-0001", "ready"); itb.transition_task(self.fx.root, "TASK-0001", "in_progress")
+        subprocess.run(["git", "init", "-q"], cwd=str(self.fx.root), check=True); subprocess.run(["git", "config", "user.name", "Idea-to-Build Tests"], cwd=str(self.fx.root), check=True); subprocess.run(["git", "config", "user.email", "tests@example.invalid"], cwd=str(self.fx.root), check=True); subprocess.run(["git", "add", "."], cwd=str(self.fx.root), check=True); subprocess.run(["git", "commit", "-qm", "fixture"], cwd=str(self.fx.root), check=True)
+        state = itb.load_state(self.fx.root); state["current_phase"] = "DEVELOPMENT_ACTIVE"; itb.save_state(self.fx.root, state)
+        source = self.fx.root / "src/change.py"; source.parent.mkdir(); source.write_text("value = 1\n", encoding="utf-8")
+        plan = self.fx.root / task["plan_path"]; plan.write_text(plan.read_text(encoding="utf-8") + "\n- [x] Implemented source change.\n", encoding="utf-8")
+        status = self.fx.root / "docs/live/STATUS.md"; status.write_text(status.read_text(encoding="utf-8") + "\nDevelopment update.\n", encoding="utf-8")
+        result = run_hook("stop_check.py", self.stop_event()); self.assertEqual(result["decision"], "block"); self.assertIn("quality", result["reason"])
     def test_stop_hook_active_is_quiet(self):
         event = self.stop_event(); event["stop_hook_active"] = True
         self.assertIsNone(run_hook("stop_check.py", event))

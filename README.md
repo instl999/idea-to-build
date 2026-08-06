@@ -2,197 +2,200 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-Idea-to-Build is a Codex-only, installable Plugin made of one Skill plus lifecycle Hooks (no MCP server). It researches existing solutions before detailed discovery, turns an approved digital-product idea into a strict 38-item requirements ledger, freezes five human-approved core contracts with SHA-256, and then develops the project with the Codex root agent or native subagents/worktrees according to actual coupling.
+Idea-to-Build is a Codex Desktop/CLI Plugin that turns a digital-product idea into a researched, human-approved, frozen, and testable development project. It combines one Skill, five lifecycle Hooks, Python 3.9+ standard-library CLIs, and Git. It has no MCP server, database, third-party Python runtime dependency, or Plugin-operated network service.
 
-Development manifest version: `0.3.0`; the latest local and remote Git tag confirmed on 2026-08-06 is `v0.2.0`. The local runtime uses only Python 3.9+ standard-library modules and Git. It needs no plugin API key, third-party Python package, or plugin-operated network service. Live solution research still requires the host's Web Search and network access.
+Version `0.4.0` adds a four-layer repository-memory system and task-by-task Codex guidance. The default is one task, one SPEC, one branch, and one Codex conversation at a time. Native Codex subagents and worktrees remain available for explicitly prepared, independent tasks.
 
-## What it does
+## What is preserved
 
-The plugin defines a 16-phase workflow from `IDEA_RECEIVED` through research, requirements, core review/freeze, document generation, Codex handoff, development, release, and archive. The manual `transition` command is graph-gated, while several specialized commands update phases under their own checks rather than through one universal state-machine gate.
+The Plugin still researches existing solutions before deep requirements work, records one of seven research decisions, validates an exact 38-item requirements ledger, requires a human to confirm and freeze five core contracts, hashes them with SHA-256, blocks AI edits after freeze, and routes core changes through `docs/live/CHANGE_REQUESTS.md`.
 
-Its important guarantees are:
+Hooks always load the trusted runtime from the installed Plugin. Opening a generated project never causes a Hook to import that project's mutable Python copy.
 
-- Research direct products, composable alternatives, and reusable open-source/Skill/MCP/SDK/template options before deep requirements work.
-- Return only one declared research decision: `ADOPT_DIRECTLY`, `ADOPT_WITH_CONFIGURATION`, `COMBINE_EXISTING_TOOLS`, `EXTEND_OPEN_SOURCE`, `BUILD_CUSTOM`, `INSUFFICIENT_RESEARCH`, or `NOT_RECOMMENDED`.
-- Fail closed when networking is unavailable, candidates conflict, or the candidate list is empty. The runtime does not yet enforce every richer evidence field required by the research protocol.
-- Require the exact 38-item ledger schema; missing IDs or altered gate metadata cannot bypass readiness.
-- Block freeze while required facts, P0 conflicts, irreversible choices, privacy, security, deployment, or acceptance details remain unresolved.
-- Assess MCP only after readiness: record one not-applicable/use-existing/build-custom/defer recommendation, prefer direct integrations or maintained existing servers, and never install or configure a server for the user.
-- Require an explicit human terminal action for confirmation and freeze. An AI task must never approve, unlock, or refreeze the core.
-- Verify frozen `docs/core/**` against `.idea-to-build/core.lock.json` and route later product changes through change control.
-- Decide whether subagents add value: one effective workstream stays with the root agent; two or more independent non-overlapping workstreams receive scoped prompts, dependency waves, branches, worktrees, tests, and merge order.
-- After freeze, treat a user request to continue development as the Codex runtime activation; use native subagents only when the plan recommends them, and verify every returned task commit before merge.
+## Four repository-memory layers
 
-## Package layout
+| Layer | Canonical source | Human view | Purpose |
+| --- | --- | --- | --- |
+| Rules | `AGENTS.md`, frozen `docs/core/**`, mutable `docs/live/WORKING_RULES.md` | `docs/live/MEMORY_MAP.md` | How Codex must work and which constraints cannot change |
+| Specification | `specs/<TASK-ID>/SPEC.md` and `PLAN.md` | The same task folder | What this task must deliver, how it will be implemented, and how it will be accepted |
+| Task | `.idea-to-build/tasks.json` | `docs/live/TASKS.md`, plus concise `STATUS.md`, `BACKLOG.md`, and `ROADMAP.md` | Exact task state, dependencies, ownership, branch/worktree, and next work |
+| Quality | `.idea-to-build/quality_gates.json` and ignored `last_quality.json` | `docs/live/QUALITY_GATES.md` | Explicit command gates and human acceptance gates bound to the current Git/worktree snapshot |
 
-```text
-idea-to-build/
-├── .agents/plugins/marketplace.json     # repository-local marketplace
-├── .codex-plugin/plugin.json            # plugin manifest
-├── hooks/                               # lifecycle Hooks and trusted guardrail runtime loader
-├── skills/idea-to-build/
-│   ├── SKILL.md
-│   ├── agents/openai.yaml
-│   ├── references/
-│   ├── assets/project-template/
-│   └── scripts/
-├── examples/team-brief-generator/       # frozen synthetic fixture
-├── scripts/audit_public_release.py      # tracked-tree and ref-email privacy audit
-└── tests/
-```
+Conflict precedence is:
 
-A generated project contains `AGENTS.md`, five core contracts, eight live documents, an ExecPlan directory, design scaffolds, Codex handoff prompts, state/requirements files, and project-local runtime scripts.
+`frozen core > current task SPEC > working rules > task state and PLAN > code and test evidence > chat`
+
+Repository memory improves context recovery; it is not unlimited memory. Automated checks improve reliability; they do not prove every product behavior is correct. Anything that cannot be automated must remain a manual acceptance gate.
 
 ## Requirements
 
 - Python 3.9 or newer (`py -3` may be used on Windows).
-- Git available with a commit identity configured.
-- A current Codex Desktop/CLI host that supports Plugins, Hooks, native subagents, and Git worktrees. Organization policy can disable capabilities.
-- Web Search only when performing live solution research.
+- Git with a configured commit identity.
+- Codex Desktop or Codex CLI with Plugins and Hooks enabled by policy.
+- Web Search only for live solution research.
 
 ## Install
-
-Clone the repository:
 
 ```bash
 git clone https://github.com/instl999/idea-to-build.git
 cd idea-to-build
-```
-
-Register its repository-local marketplace and install the plugin:
-
-```bash
 codex plugin marketplace add .
+codex plugin add idea-to-build@idea-to-build-local
 codex plugin marketplace list
 ```
 
-In ChatGPT Desktop/Codex, restart if needed, open the Plugins Directory, select the `Idea-to-Build Local` source, and install the plugin there. Current OpenAI documentation exposes CLI marketplace management but directs local plugin installation/testing to the Desktop Plugins Directory. In a new task, run `/hooks`, verify the source is this plugin's `hooks/hooks.json`, review the commands and hashes, then trust and enable `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, and `Stop`.
-
-To update, pull the repository, restart/refresh the Desktop Plugins Directory source, and reinstall there if the host requires it:
-
-```bash
-git pull
-codex plugin marketplace list
-```
-
-Review new Hook hashes and use a new task so the updated Skill context is loaded. The older `codex plugin add/remove` commands are not documented by the current official packaging page and were not executable in this audit environment.
-
-## Invoke
-
-Explicit invocation is the most predictable:
+Restart Codex if the Plugin does not appear. Start a new Codex task, review `/hooks`, confirm the Hook source is this Plugin's `hooks/hooks.json`, and trust the reviewed hashes. Invoke the Skill explicitly:
 
 ```text
-$idea-to-build I want a local-first tool that turns meeting notes into traceable team briefs. Research current alternatives first; if continuing is justified, turn it into an implementable and testable Codex project.
+$idea-to-build I want a local-first tool that turns meeting notes into traceable team briefs. Research existing solutions first; if building is justified, create a testable development project.
 ```
 
-The Skill may also activate implicitly for a digital product/software idea when the user asks to validate, research, clarify requirements, or prepare Codex development. It should not activate for a narrow bug fix, code explanation, already-scoped small feature, generic software recommendation, casual brainstorming without validation/build intent, or a non-digital product.
+The Skill is intended for product/software ideas that still need research, requirements, or development packaging. It should not activate for a narrow bug fix, code explanation, already-scoped small feature, generic recommendation, or non-digital product.
 
-## Workflow
+## From installation to the first Codex development task
 
-### 1. Initialize a generated project
+1. Initialize the generated project:
+
+   ```bash
+   python skills/idea-to-build/scripts/init_project.py --path ../my-product --name "My Product" --language en
+   cd ../my-product
+   ```
+
+2. Use the Skill to perform current, source-backed research. Record the research input and build decision with the generated CLIs. No network, conflicting evidence, or an empty candidate list must end as `INSUFFICIENT_RESEARCH`, never as an invented market gap.
+
+3. Complete the exact 38-item ledger and run readiness:
+
+   ```bash
+   python scripts/project_state.py update-requirements --path . --input requirements-updates.json
+   python scripts/requirements_check.py --path . --update-state
+   ```
+
+4. Review all five files under `docs/core/`. Then leave the AI tool-call flow and personally run:
+
+   ```bash
+   python scripts/project_state.py confirm-core --path . --confirmation "I confirm and freeze this core baseline"
+   python scripts/freeze_core.py --path . --tag core-v1
+   ```
+
+5. Create or review a task. A generated task starts in `backlog`; replace the placeholder acceptance item in its SPEC with at least one concrete, observable result before marking it ready:
+
+   ```bash
+   python scripts/task_state.py create --path . --task TASK-0001 --title "First accepted feature" --owned-path src/feature
+   python scripts/task_state.py ready --path . --task TASK-0001
+   python scripts/task_state.py list --path .
+   ```
+
+6. Print the complete start prompt:
+
+   ```bash
+   python scripts/memory_prompts.py show --path . --kind start-task --task TASK-0001
+   ```
+
+7. Copy the complete output, open a new Codex conversation in the project root, and paste it. Wait for Codex to restate the goal, in/out scope, immutable constraints, acceptance criteria, owned paths, and checks before allowing implementation. Do not start a new conversation with only “continue development.”
+
+## Daily one-task loop
 
 ```bash
-python skills/idea-to-build/scripts/init_project.py --path ../my-product --name "My Product"
-cd ../my-product
-python scripts/project_state.py status --path .
+python scripts/task_state.py list --path .
+python scripts/memory_prompts.py show --path . --kind start-task --task TASK-0001
+python scripts/task_state.py start --path . --task TASK-0001
 ```
 
-Initialization preflights managed-output conflicts before writing, refuses links/junctions and existing files unless `--force` is explicit, then initializes an exact project Git root and normally creates the skeleton commit. A later Git/root/commit failure does not roll back files already copied. `--skip-initial-commit` is intended for CI/fixtures.
+Keep the same conversation while working on that task. Start a new one when the task ID changes, an independent module begins, another branch was merged, context was compressed or confused, ownership changed, or implementation turns into an independent quality audit.
 
-### 2. Research and record a build decision
-
-Use live Web Search across all three solution layers. Minimize and pseudonymize query data; do not send secrets, personal records, or proprietary text. Save dated official sources, evidence, inferences, conflicts, and stale/unverified fields, then run:
+At the end:
 
 ```bash
-python scripts/research_report.py --path . --input research-input.json
-python scripts/project_state.py set-decision --path . --build BUILD_CUSTOM
+python scripts/memory_prompts.py show --path . --kind finish-task --task TASK-0001
+python scripts/quality_gate.py run --path .
+python scripts/task_state.py review --path . --task TASK-0001
 ```
 
-No network, conflicting evidence, or an empty candidate set produces `INSUFFICIENT_RESEARCH`; “not found” is never presented as proof of a market opportunity.
-
-### 3. Complete requirements and readiness
+`quality_gate.py run` uses the current task and runs all configured command gates. You may select explicitly:
 
 ```bash
-python scripts/project_state.py update-requirements --path . --input requirements-updates.json
-python scripts/requirements_check.py --path . --update-state
+python scripts/quality_gate.py status --path . --task TASK-0001
+python scripts/quality_gate.py run --path . --task TASK-0001 --gate unit-tests
 ```
 
-The ledger loader requires all 38 stable IDs and their code-defined category, priority, reversibility, and readiness metadata. A confirmed item must carry a value.
-
-### Conditional MCP assessment before freeze
-
-After readiness passes, the Skill evaluates MCP only when a confirmed AI/agent client needs external tools or resources and an MCP-capable host plus a material advantage over a direct API, SDK, Skill, CLI, or application module are established. It records exactly one of `MCP_NOT_APPLICABLE`, `MCP_USE_EXISTING_SERVER`, `MCP_BUILD_CUSTOM_SERVER`, or `MCP_DEFER`.
-
-When MCP is justified, the user receives current-source review criteria, capability mapping, least-privilege authentication and secret guidance, host/transport assumptions, user-performed installation steps, synthetic and negative tests, observability, disable/rollback, and a non-MCP fallback. A core-affecting decision enters `ARCHITECTURE_CONTRACT.md` before freeze; implementation details remain in `docs/design/MCP_INTEGRATION_GUIDE.md`.
-
-### 4. Human confirmation and freeze
-
-Have Codex draft and present the five core contracts. After reviewing them, leave the AI tool-call flow and run these yourself in a terminal:
+Only a human may complete a manual gate, from a terminal outside the AI tool-call flow:
 
 ```bash
-python scripts/project_state.py confirm-core --path . --confirmation "I confirm and freeze this core baseline"
-python scripts/freeze_core.py --path . --tag core-v1
+python scripts/quality_gate.py accept-manual --path . --task TASK-0001 --gate user-acceptance --confirmation "I accept this task result"
+python scripts/task_state.py complete --path . --task TASK-0001
 ```
 
-Freeze requires the project directory to be the exact Git top-level, creates normalized per-file and aggregate SHA-256 hashes, writes the lock and state, applies read-only bits as a secondary guardrail, and commits the baseline. Failures before commit restore state, lock, permissions, and managed staging. A tag failure after a successful commit is reported as partial success and requires human handling.
+A task cannot enter `ready` without SPEC/PLAN and concrete acceptance, cannot start with unfinished dependencies or blockers, and cannot become `done` until every required command gate passes for the current snapshot and every required manual gate has human acceptance. Reopening `done` requires a recorded reason.
 
-### 5. Generate the Codex handoff
+## Development modes
+
+`guided_sequential` is the default and recommended mode for ordinary users. Only one task is in progress; a worktree is not required; quality and documentation stay in the same conversation.
+
+Advanced users can opt in to parallel worktrees:
 
 ```bash
-python scripts/generate_handoff.py --path . --workstreams workstreams.json
-python scripts/render_context.py --path .
-python scripts/verify_core.py --path .
+python scripts/project_state.py set-development-mode --path . --mode parallel_worktrees
+python scripts/generate_handoff.py --path .
 ```
 
-Workstream names, goals, dependencies, tests, and paths must be bounded single-line data. Ownership must be repository-relative and cannot include the repository root, `.git`, `.codex`, `.idea-to-build`, Hooks, core files, or protection scripts. Shared foundation files such as package manifests, lockfiles, configuration, and public interfaces need an explicit owner.
+Parallel mode uses only canonical ready tasks with explicit IDs, SPEC/PLAN, resolved dependencies, required gates, branch/worktree assignments, and non-overlapping owned paths. The root orchestrator owns shared task state and merges verified results. It does not invent extra quality/release agents or split work merely to reach a thread count.
 
-Generated design documents are review-required working scaffolds, not completed specifications.
-
-The generated design set includes `MCP_INTEGRATION_GUIDE.md`; it records `MCP_NOT_APPLICABLE` when MCP does not belong in the product rather than treating a server as a default.
-
-### 6. Use the development guidance
-
-`generate_handoff.py` always creates a root-agent prompt and `codex/dispatch.json`. It first collapses overlapping ownership and then chooses a mode:
-
-- `SINGLE_AGENT`: one effective/high-coupling workstream. Follow `codex/prompts/00-*.md` in the current integration worktree.
-- `SUBAGENTS`: two or more independent workstreams. The handoff explains why parallel agents help and provides one self-contained prompt, owned paths, dependency wave, branch, worktree, tests, and merge order per task.
-
-After freeze, when the user asks Codex to proceed with development, the Skill follows this plan directly. In `SINGLE_AGENT` mode it keeps work in the root task. In `SUBAGENTS` mode it uses Codex native collaboration tools and the adapter prepares and validates execution:
+## Task, quality, prompt, and migration CLIs
 
 ```bash
-python scripts/codex_dispatch.py preview --path . --max-parallel 3
-python scripts/codex_dispatch.py start --path . --max-parallel 3
-python scripts/codex_dispatch.py materialize-wave --path . --wave 1 --base-commit <full-head>
-python scripts/codex_dispatch.py verify-result --path . --task-id <id> --commit <full-commit> --base-commit <full-wave-base>
-python scripts/codex_dispatch.py merge-result --path . --task-id <id> --commit <full-commit> --base-commit <full-wave-base>
-python scripts/codex_dispatch.py retire-wave --path . --wave 1
+python scripts/task_state.py list --path .
+python scripts/task_state.py show --path . --task TASK-0001
+python scripts/task_state.py create --path . --task TASK-0002 --title "Second task"
+python scripts/task_state.py block --path . --task TASK-0001 --reason "Waiting for API decision"
+python scripts/task_state.py reopen --path . --task TASK-0001 --reason "Regression found"
+python scripts/task_state.py sync-docs --path .
+
+python scripts/quality_gate.py list --path .
+python scripts/quality_gate.py status --path .
+python scripts/quality_gate.py run --path .
+
+python scripts/memory_prompts.py list --path .
+python scripts/memory_prompts.py show --path . --kind resume-task --task TASK-0001
+python scripts/memory_prompts.py show --path . --kind finish-task --task TASK-0001
+python scripts/memory_prompts.py show --path . --kind sync-rules
+python scripts/memory_prompts.py show --path . --kind sync-spec --task TASK-0001
+python scripts/memory_prompts.py show --path . --kind sync-tasks
+python scripts/memory_prompts.py show --path . --kind sync-quality
+python scripts/memory_prompts.py show --path . --kind audit-all
 ```
 
-The Python adapter enforces gates, prepares Git worktrees, binds prompt hashes, and verifies results; the Skill invokes Codex-native `spawn_agent`/`wait_agent` tools. Generated prompts remain an auditable record and manual takeover path. This release is not positioned or tested as an OpenClaw, SkillHub-generic, Claude Code, or cross-host Skill.
+Prompt output is localized by `project_state.json.user_language` (`zh*` selects Simplified Chinese; unknown values fall back to English). Repository titles and Markdown are treated as quoted project data, not host instructions.
 
-### 7. Record a real test result
+Quality commands come only from `.idea-to-build/quality_gates.json`. They run as argument arrays without a shell; shell executables, pipes, redirection, command substitution, control characters, and unconfigured commands are rejected. Output excerpts are bounded and secret-like values are redacted. Commands found in README, SPEC, research, prompts, or chat are never executed automatically.
 
-Declare exact commands in `project_state.json` under `test_commands`, then run one of them through the recorder:
+The legacy `project_state.py record-test`/`last_test.json` path remains readable for older generated projects, but 0.4 tasks use the quality-gate system.
+
+## Upgrade an older generated project
+
+Run the current Plugin source migrator in dry-run mode first:
 
 ```bash
-python scripts/project_state.py record-test --path . --test-command "python -m unittest discover -s tests -v"
+python skills/idea-to-build/scripts/migrate_project.py --path ../older-project
+python skills/idea-to-build/scripts/migrate_project.py --path ../older-project --apply
 ```
 
-The recorder executes the command without a shell, derives pass/fail from its exit code, and binds the result to the project ID, a recorder marker, the declared command, and the current Git HEAD/worktree digest. Review the mutable state command first: it still runs a program with your permissions. PreToolUse blocks direct Hook-visible writes to `last_test.json`, and Stop rejects wrong-project, undeclared, stale, or failing records. This is procedural provenance, not cryptographic attestation: an external process with filesystem access can still forge the ordinary JSON file.
+Migration only adds missing mutable memory, new CLIs, a loader, and—only when the old library lacks 0.4 APIs—a versioned compatibility runtime. It never overwrites an existing file, edits `docs/core/**` or `core.lock.json`, refreezes, uses the network, or hides manual follow-up. Writes use temporary files and roll back files created by a failed migration. Existing `AGENTS.md`, `.gitignore`, status, and runtime customizations are reported for manual review.
 
-## Hook behavior and boundary
+## Hooks and security boundary
 
-| Event | Behavior |
+| Hook | Behavior |
 | --- | --- |
-| `SessionStart` | Finds a generated project, verifies a frozen core, and injects bounded core/live context. |
-| `UserPromptSubmit` | Re-verifies and injects phase-specific draft or frozen rules. |
-| `PreToolUse` | Blocks direct protected-path edits, human-only commands, path traversal, and opaque Git mutations while frozen. |
-| `PostToolUse` | Recomputes hashes after tool calls and stops on drift. |
-| `Stop` | During development phases, requires valid core, current real test evidence, and a STATUS update. |
+| `SessionStart` | Finds a generated project, verifies frozen core, and injects bounded context. |
+| `UserPromptSubmit` | Re-verifies and injects current task/spec/plan/quality summaries. |
+| `PreToolUse` | Blocks protected-path edits, human-only actions, unsafe paths, and opaque Git mutations. |
+| `PostToolUse` | Detects core drift after tool calls. |
+| `Stop` | Applies lightweight consistency checks to memory-only maintenance and full current-task/current-snapshot gates to substantive changes. |
 
-Hooks are defense in depth, not an operating-system sandbox and not a cryptographic human-identity mechanism. A process, external editor, indirect program, unsupported tool event, or user with filesystem rights can bypass prevention. Hash verification, exact Git history, review, and human process remain authoritative. Never rely on Hooks alone to protect sensitive data or frozen contracts.
+Hooks are defense in depth, not an operating-system sandbox, cryptographic identity check, or proof that every indirect process is safe. Core verification, exact Git history, scoped ownership, code review, and human acceptance remain required.
 
-## Test and validate
+No secret, real `.env`, personal data, customer fixture, private absolute path, or complete sensitive log belongs in repository memory. Live research should minimize and pseudonymize queries. See [Security](SECURITY.md) and [Privacy](docs/PRIVACY.md).
+
+## Validate the Plugin
 
 ```bash
 python -m unittest discover -s tests -v
@@ -202,45 +205,30 @@ python examples/team-brief-generator/scripts/verify_core.py --path examples/team
 python scripts/audit_public_release.py --worktree-only
 ```
 
-The current suite contains 91 unit/integration scenarios covering activation boundaries, schema/state handling, research decisions, exact requirements gates, the post-readiness MCP protocol and guide, confirmation/freeze/hash behavior, all five Hook entrypoints including Stop pass/block/forgery paths, path and prompt hardening, task planning, package validation, and end-to-end generation. The latest local run passed 90 scenarios and skipped one Windows directory-symlink case because that capability was unavailable. CI is configured for Linux, Windows, and macOS with Python 3.9 and 3.13.
+The suite covers activation, research, 38-item readiness, human freeze/hash enforcement, Hooks, task transitions, dependencies, idempotent projections, prompt localization/injection boundaries, quality command safety and stale evidence, sequential/parallel dispatch, non-overwriting migration, package validation, and end-to-end generation. CI runs on Linux, Windows, and macOS with Python 3.9 and 3.13.
 
-Before a public push, run `python scripts/audit_public_release.py` after sanitizing commit metadata. The audit examines current tracked text, symbolic links, common secret/private-path patterns, email addresses, and author/committer emails across all refs. It does not inspect untracked files or historical blob contents and is not a substitute for repository-host secret scanning.
+The example at `examples/team-brief-generator` is entirely synthetic. Its frozen core and lock are immutable fixtures; its four task SPECs, task ledger, quality gates, prompt catalog, and parallel handoff demonstrate 0.4 without claiming real research or human approval.
 
-The example under `examples/team-brief-generator` is entirely synthetic: names, approval metadata, timestamps, decisions, candidate data, and requirements are fixtures, not real market evidence or a claim that a human approved a real product.
+## Support boundary
 
-## Codex-only support boundary
+The supported runtime is Codex Desktop/CLI. OpenClaw, generic SkillHub runners, ChatGPT managed web surfaces, Claude Code, and other agent hosts do not provide the verified Plugin/Hook/subagent/worktree contract. The Markdown may be readable elsewhere, but that does not make the package installable or safe there.
 
-This plugin targets Codex Desktop and Codex CLI. Its end-to-end contract depends on Codex Plugins, lifecycle Hooks, native collaboration tools, local Git, and sibling worktrees. Host version, rollout, plan, workspace policy, available collaboration slots, and Hook trust can limit execution.
-
-OpenClaw, generic SkillHub runtimes, ChatGPT managed web surfaces, Claude Code, and other agent hosts are outside the supported runtime boundary. Markdown prompts may be readable elsewhere, but that does not make the adapter installable, safe, or behaviorally compatible there.
 ## Uninstall
 
-Remove the plugin in the Desktop Plugins Directory. If the local marketplace source is no longer needed, remove and verify that source:
-
 ```bash
+codex plugin remove idea-to-build
 codex plugin marketplace remove idea-to-build-local
-codex plugin marketplace list
 ```
 
 Generated projects are not deleted.
 
-## Troubleshooting
+## Documentation
 
-- Plugin missing: inspect `codex plugin marketplace list`, confirm the local marketplace, and restart the host.
-- Skill not invoked: start a new task and use `$idea-to-build` explicitly.
-- Hook skipped: use `/hooks`, review/trust the current hash, and confirm Hooks are enabled by policy/configuration.
-- Research remains insufficient: enable Web Search or provide current, dated official evidence; never edit the conclusion optimistically.
-- Readiness fails: inspect the JSON blockers and resolve missing/altered requirements, P0 conflicts, irreversible assumptions, and the build decision.
-- Freeze fails: confirm exact Git root, identity, clean managed staging, readiness, and exact human confirmation.
-- Core verification fails: stop, preserve evidence, and file a change request; never update hashes to hide drift.
-- Stop repeats: record an allowed real test command after the latest changes and update `docs/live/STATUS.md`.
-
-## Further documentation
-
+- [Repository memory and task workflow](docs/REPOSITORY_MEMORY.md)
 - [Architecture](docs/ARCHITECTURE.md)
-- [Privacy and data handling](docs/PRIVACY.md)
-- [Frozen-core change control](docs/CHANGE_CONTROL.md)
-- [Security policy](SECURITY.md)
+- [Privacy](docs/PRIVACY.md)
+- [Change control](docs/CHANGE_CONTROL.md)
+- [Security](SECURITY.md)
 - [Contributing](CONTRIBUTING.md)
 - [Changelog](CHANGELOG.md)
 

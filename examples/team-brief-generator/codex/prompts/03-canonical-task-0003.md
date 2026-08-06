@@ -1,21 +1,26 @@
-# Thread 5: Quality engineering
+# Thread 3: Canonical TASK-0003
 
 ## Identity
 
-You own only this workstream: Report test, integration, security, performance, regression, and core-consistency findings
+You own only this workstream: Implement TASK-0003 under specs/TASK-0003/SPEC.md
+
+Canonical task: TASK-0003
+Task SPEC: specs/TASK-0003/SPEC.md
+Task PLAN: specs/TASK-0003/PLAN.md
+Required quality gates: verify-core, user-acceptance
 
 ## Before editing
 
 1. Locate the Git root and run `git status`.
 2. Confirm the worktree is clean enough for this scoped work.
-3. Read `AGENTS.md`, every file in `docs/core/`, `docs/live/STATUS.md`, `ROADMAP.md`, `DECISIONS.md`, `RISKS.md`, and the relevant ExecPlan in `plans/`.
+3. Read `AGENTS.md`, `docs/live/MEMORY_MAP.md`, the frozen core summary, `WORKING_RULES.md`, `STATUS.md`, this task SPEC and PLAN, relevant decisions/risks, and no unrelated task archive.
 4. Run `python scripts/verify_core.py --path .`.
 5. Restate the controlling constraints in at most ten bullets.
 6. Do not edit until these checks pass.
 
 ## Git rules
 
-- Use branch `codex/05-quality-engineering` in worktree `../team-brief-generator-05-quality-engineering`.
+- Use branch `codex/03-task-0003` in worktree `../team-brief-generator-03-task-0003`.
 - Initialize Git only if absent; never start major work in an unexplained dirty tree.
 - Use a separate worktree for parallel changes and stay within the ownership below.
 - Commit each runnable, tested stable feature with an accurate message.
@@ -28,8 +33,7 @@ You own only this workstream: Report test, integration, security, performance, r
 ## File ownership
 
 Writable:
-- `tests`
-- `quality`
+- `src/export`
 
 Read-only: `AGENTS.md`, live documents not assigned here, and other threads' owned paths.
 
@@ -39,16 +43,15 @@ Shared integration files must be proposed in the handoff and merged by Thread 0.
 
 ## Implementation scope
 
-- Must complete: Report test, integration, security, performance, regression, and core-consistency findings
+- Must complete: Implement TASK-0003 under specs/TASK-0003/SPEC.md
 - Must not complete: unrelated workstreams or a core-contract change.
-- Dependencies: Input and parsing, Brief generation, Export and persistence, Review interface
+- Dependencies: TASK-0001
 - Before adding a production dependency, explain necessity, maintenance, license, security, privacy, deployment fit, lock-in, and replacement options.
 - Preserve the API, open-source, and acceptance constraints in the frozen documents.
 
 ## Acceptance and test commands
 
 - `npm test`
-- `python scripts/verify_core.py --path .`
 - `python scripts/verify_core.py --path .`
 
 ## Completion conditions

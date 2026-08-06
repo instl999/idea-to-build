@@ -114,3 +114,11 @@ sequenceDiagram
 - 生命周期 Hook 只能观察宿主实际发送的事件，不能管控外部编辑器/进程。
 - CI 不执行真实 Codex 宿主流程；Python 测试验证 adapter 契约和 Git 行为。
 - 当前源码没有把 dispatch 自动收尾到 `COMPLETE` 的转换。
+
+## 仓库记忆架构（0.4）
+
+核心冻结后，runtime 增加四个协调层：受保护规则/核心、逐任务 SPEC/PLAN、规范 `.idea-to-build/tasks.json`、以及带当前快照证据的显式质量门禁。`docs/live/TASKS.md` 从 JSON 生成，永远不是第二状态源。`render_context()` 只选择一个任务并输出有上限、带数据边界的摘要；并行模式拒绝猜测。Stop 对纯记忆维护走轻量路径，对实质修改走任务感知路径。
+
+`guided_sequential` 只规划一个根任务，不强制 worktree。`parallel_worktrees` 只从规范 ready 任务、依赖波次和互不重叠的所有权生成子任务。handoff 和 dispatch 把每个子任务绑定到任务 ID、SPEC、PLAN、质量门禁、提示词 hash、分支、worktree 和可写路径。
+
+旧项目本地 runtime 仍可读取。增量迁移器永不覆盖它们；缺少 0.4 API 时，新增仅供记忆 CLI 使用的版本化兼容 runtime。已安装 Hook 仍只导入已安装 Plugin 的可信 runtime。

@@ -33,3 +33,7 @@ Add regression tests for behavioral changes. Update English and Chinese document
 Use a GitHub no-reply or project-specific public email. Never commit secrets, personal records, private absolute paths, confidential research text, `.env` files, generated logs, or real customer/user fixtures. Use synthetic examples and minimize Web Search queries.
 
 A pull request should explain the problem, security/privacy impact, solution, tests, compatibility, documentation changes, and remaining risks. Security reports follow [SECURITY.md](SECURITY.md), not public pull requests.
+
+## Repository-memory changes
+
+Changes to task state, gate schema, prompts, context injection, Stop, migration, or dispatch are compatibility- and security-sensitive. Document threats, failure/recovery behavior, and old-project behavior; add success and refusal regression tests; keep English/Chinese public docs synchronized; update `CHANGELOG_AI.md` and `PROJECT_STATUS.md`; and verify the frozen example core/lock bytes remain unchanged.

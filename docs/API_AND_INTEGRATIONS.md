@@ -72,3 +72,16 @@ MCP 不是本 Plugin 的运行时外部集成或公共 API。Skill 仅在 requir
 - `codex_dispatch_status=COMPLETE`、已完成 task/current wave 和 merge order 的写入/强制接口未找到。
 - Stop Hook 的当前通过、缺记录、伪造记录和递归保护路径已有自动测试；stale、STATUS 缺失、非开发阶段以及真实 Codex 宿主事件仍需补充。
 - package 校验器已覆盖 marketplace、Hook helper、完整 Skill CLI、项目记忆文档和版本一致性，但仍是显式清单与启发式内容扫描，不替代宿主安装或专业 secret scanning。
+
+## 0.4 任务、质量、提示词与迁移 CLI
+
+| CLI | 主要子命令 | 契约 |
+| --- | --- | --- |
+| `task_state.py` | list/show/create/ready/start/block/review/complete/reopen/cancel/sync-docs | 严格 ID、路径、依赖、状态和完成门禁；JSON 为唯一状态源 |
+| `quality_gate.py` | list/status/run/all/accept-manual | 可从 `current_task_id` 推导任务；run 无 gate 时执行全部命令门禁；人工接受仅限用户终端 |
+| `memory_prompts.py` | list/show | 输出 start/resume/finish 与五种维护提示词；`zh*` 选择中文，否则英文 |
+| `migrate_project.py` | 默认 dry-run、`--apply` | 仅增加缺失文件，旧 runtime 用新增兼容副本，不覆盖核心/锁/用户文件 |
+| `project_state.py` | `set-development-mode` | 在 guided_sequential 和 parallel_worktrees 间显式选择 |
+| `render_context.py` | 可选 `--task` | 只注入选定任务的有界摘要；并行模式不猜任务 |
+
+预期业务错误仍以结构化 JSON 写 stderr 并退出 2。质量子进程不经 shell，默认超时 900 秒，输出摘要约 4 KiB 并进行启发式秘密脱敏。

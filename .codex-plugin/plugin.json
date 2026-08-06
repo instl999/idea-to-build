@@ -1,7 +1,7 @@
 {
   "name": "idea-to-build",
-  "version": "0.3.0",
-  "description": "Codex-only workflow to validate a digital-product idea, freeze human-approved core contracts, and develop it with native subagents and verified Git worktrees when useful.",
+  "version": "0.4.0",
+  "description": "Codex-only workflow to validate a digital-product idea, freeze human-approved core contracts, and guide long-term task development with repository memory, explicit quality gates, and optional verified worktrees.",
   "author": {
     "name": "Idea-to-Build Contributors"
   },
@@ -10,6 +10,8 @@
     "product-discovery",
     "requirements",
     "architecture",
+    "repository-memory",
+    "quality-gates",
     "codex-orchestration",
     "mcp-integration",
     "subagents",
@@ -17,9 +19,9 @@
   ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "Idea-to-Build：需求验证与 Codex 开发编排器",
-    "shortDescription": "Codex 专用：冻结用户确认的核心契约，并按实际需要调度子智能体和工作树",
-    "longDescription": "先检索和比较现成方案，再收集可验收需求；需求就绪后仅在确有收益时评估生成产品的 MCP 集成，随后冻结用户确认的核心契约，并生成带文件所有权、依赖波次、Git 工作树和提交验证门禁的 Codex 开发包。核心冻结后，用户要求继续开发时，Codex 会按实际依赖与文件所有权决定使用根智能体还是原生子智能体。",
+    "displayName": "Idea-to-Build：需求验证与 Codex 长期开发",
+    "shortDescription": "冻结用户确认的核心契约，以任务记忆和质量门禁指导 Codex 开发",
+    "longDescription": "先研究现有方案并收敛可验收需求，再冻结用户确认的核心契约；随后建立规则、任务规格、任务状态和质量门禁四层仓库记忆，默认按单任务顺序开发，仅在独立任务确有收益时使用 Codex 子智能体与 Git worktree。",
     "developerName": "Idea-to-Build Contributors",
     "category": "Productivity",
     "capabilities": [
@@ -29,8 +31,8 @@
     ],
     "defaultPrompt": [
       "$idea-to-build 我有一个应用想法，请先检索现成方案，再判断是否值得开发。",
-      "$idea-to-build 把这个模糊的软件需求整理成可开发、可验收的 Codex 项目；需求就绪后仅在确有收益时评估 MCP。",
-      "$idea-to-build 核心契约由我确认冻结后，按我的授权使用 Codex 子智能体和 Git 工作树并行开发。"
+      "$idea-to-build 把这个模糊的软件需求整理成可开发、可验收、可长期维护的 Codex 项目。",
+      "$idea-to-build 核心契约由我确认冻结后，请建立任务规格、任务状态和质量门禁，并指导我逐任务开发；只有独立工作项确有收益时才使用子智能体和工作树。"
     ],
     "brandColor": "#2563EB"
   }

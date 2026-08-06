@@ -13,3 +13,5 @@
 ## Deferred
 
 None recorded.
+
+Task-level execution state belongs in .idea-to-build/tasks.json; this backlog is only a product-level intake and prioritization summary.

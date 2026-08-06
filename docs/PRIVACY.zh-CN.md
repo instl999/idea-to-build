@@ -41,3 +41,7 @@ python scripts/audit_public_release.py
 ```
 
 该辅助脚本是启发式的：完整模式检查当前 tracked 文本和所有 refs 的 author/committer 邮箱，不检查 untracked 文件或历史 blob 内容。还应启用宿主 secret scanning/push protection 并人工复核。若敏感数据进入 GitHub，应立即撤销/轮换，按宿主流程清除 Git 对象/缓存/fork，并依据政策或法律通知受影响方。
+
+## 仓库记忆数据
+
+任务标题、SPEC/PLAN、工作规则、状态、门禁说明和受限命令输出都保留为本地仓库数据；`last_quality.json` 默认忽略。输出摘要有长度上限，并脱敏常见 token/secret 赋值，但脱敏是启发式的：不要运行会打印凭据或个人数据的门禁。提示词/上下文只包含选定任务和摘要，不包含完整日志、全部任务或外部研究正文。

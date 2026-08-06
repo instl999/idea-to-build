@@ -125,7 +125,19 @@
 
 ## 已在 2026-08-06 修复的审查问题
 
-- **K-003**：`pyproject.toml` 已与 Plugin manifest 统一为 0.3.0，package validator 增加基准版本与 `+codex.*` cachebuster 一致性测试；远端 0.3.0 tag/发布仍是独立待确认事项。
+- **K-003**：`pyproject.toml` 已与 Plugin manifest 统一为 0.4.0，package validator 保留基准版本与 `+codex.*` cachebuster 一致性测试；远端 0.4.0 tag/发布仍是独立待确认事项。
 - **K-016**：Plugin 必需清单现覆盖 marketplace、Hook helper、完整 CLI、发布脚本、CI 与项目记忆；生成项目校验复用统一 10 脚本清单并有缺文件反例。22 份设计文档的内容级完整性仍未强制。
 - **K-017**：模板和冻结示例加入 `.gitignore`，默认忽略测试/guardrail、本地虚拟环境、Python 缓存和 `.env*`，并保留 `.env.example`。既有项目与已跟踪历史不自动迁移。
 - **K-019**：Stop Hook 已增加当前快照通过、缺记录、伪造记录和 `stop_hook_active` 测试；stale、STATUS 缺失、非开发阶段和真实宿主事件仍可扩展。
+
+### K-021：质量证据和人工 actor 仍是流程性证明
+
+- 证据：`last_quality.json` 是普通本地 JSON；Hook 阻止可观察的 AI 人工接受调用，Stop 校验 actor、任务和快照，但拥有文件系统权限的外部进程仍能改写记录。
+- 影响：它适合开发流程门禁，不适合作为对抗性环境中的签名构建证明或身份认证。
+- 缓解：保留 Git/CI/代码审查，用户亲自执行人工门禁，输出不含秘密；高保证场景使用宿主回执、受保护 CI 或签名 provenance。
+
+### K-022：任务 JSON 与人类 Markdown 投影不是跨文件事务
+
+- 证据：规范 JSON 使用临时文件加 `os.replace`；随后生成 `TASKS.md`。投影写入失败不会回滚已经合法的规范状态。
+- 影响：极端 I/O 失败时人类视图可能暂时 stale，但不会出现两个规范状态源。
+- 恢复：运行 `task_state.py sync-docs --path .` 幂等重建投影；不得反向从 Markdown 猜测状态。

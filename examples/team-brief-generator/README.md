@@ -14,3 +14,20 @@ python scripts/validate_package.py
 ```
 
 Start with `codex/HANDOFF.md` and `codex/dispatch.json`, then use the self-contained prompt matching each planned task. This Codex fixture recommends native subagents because its workstreams are independent; a user request to proceed after freeze activates the plan. The generated design files are scaffolds that must be reviewed and completed during their owned tasks; they are not final specifications.
+## Repository memory example
+
+This synthetic fixture demonstrates the four layers introduced in 0.4.0:
+
+- rules in `AGENTS.md`, frozen core, `WORKING_RULES.md`, and `MEMORY_MAP.md`;
+- four task SPEC/PLAN directories under `specs/`;
+- canonical `.idea-to-build/tasks.json` plus `docs/live/TASKS.md`;
+- explicit command/manual gates in `.idea-to-build/quality_gates.json`.
+
+It explicitly selects `parallel_worktrees` because its four ready workstreams have dependencies and non-overlapping ownership. Inspect a beginner-safe start prompt with:
+
+```text
+python scripts/task_state.py list --path .
+python scripts/memory_prompts.py show --path . --kind start-task --task TASK-0001
+```
+
+All names, approvals, tasks, timestamps, requirements, and data are synthetic. A ready task is not evidence that a real user accepted or completed it.

@@ -9,8 +9,10 @@ import sys
 from pathlib import Path
 
 PROTECTED_EXACT = {
-    ".idea-to-build/core.lock.json", ".idea-to-build/last_test.json", "agents.md", "scripts/freeze_core.py",
-    "scripts/verify_core.py", "scripts/idea_to_build_lib.py", "scripts/codex_dispatch.py",
+    ".idea-to-build/core.lock.json", ".idea-to-build/last_test.json", ".idea-to-build/last_quality.json", "agents.md", "scripts/freeze_core.py",
+    "scripts/verify_core.py", "scripts/idea_to_build_lib.py", "scripts/codex_dispatch.py", "scripts/task_state.py",
+    "scripts/quality_gate.py", "scripts/memory_prompts.py", "scripts/migrate_project.py",
+    "scripts/_memory_runtime.py", "scripts/idea_to_build_memory_runtime.py",
 }
 PROTECTED_PREFIXES = ("docs/core/", "hooks/", ".codex/hooks/")
 MUTATING_TOOL = re.compile(r"(?i)(apply_patch|edit|write|delete|remove|move|rename|replace|create)")
@@ -22,7 +24,7 @@ MUTATING_COMMAND = re.compile(
 )
 PROTECTED_FRAGMENT = re.compile(
     r"(?i)(?:[A-Za-z]:)?[^\s'\"]*(?:docs[\\/]core(?:[\\/][^\s'\"]*)?|\.idea-to-build[\\/]core\.lock\.json|"
-    r"\.idea-to-build[\\/]last_test\.json|AGENTS\.md|(?:\.codex[\\/])?hooks[\\/][^\s'\"]*|scripts[\\/](?:freeze_core|verify_core|idea_to_build_lib|codex_dispatch)\.py)"
+    r"\.idea-to-build[\\/](?:last_test|last_quality)\.json|AGENTS\.md|(?:\.codex[\\/])?hooks[\\/][^\s'\"]*|scripts[\\/](?:freeze_core|verify_core|idea_to_build_lib|codex_dispatch|task_state|quality_gate|memory_prompts|migrate_project|_memory_runtime|idea_to_build_memory_runtime)\.py)"
 )
 
 def read_event():
@@ -118,7 +120,7 @@ def protected_script_execution_allowed(root, cwd, command):
     if executable in ("py", "py.exe") and len(tokens) > index and tokens[index] == "-3": index += 1
     if len(tokens) <= index: return False
     script = relative_if_inside(root, cwd, tokens[index])
-    if script not in {"scripts/verify_core.py", "scripts/codex_dispatch.py"}: return False
+    if script not in {"scripts/verify_core.py", "scripts/codex_dispatch.py", "scripts/task_state.py", "scripts/quality_gate.py", "scripts/memory_prompts.py"}: return False
     arguments = tokens[index + 1:]
     if arguments.count("--path") != 1: return False
     path_index = arguments.index("--path")
@@ -131,7 +133,10 @@ def protected_script_execution_allowed(root, cwd, command):
         return False
     if resolved_target != Path(root).resolve(): return False
     if script == "scripts/verify_core.py": return arguments[0] == "--path" and len(arguments) == 2
-    return bool(arguments and arguments[0] in ("preview", "start", "materialize-wave", "verify-result", "merge-result", "retire-wave"))
+    if script == "scripts/codex_dispatch.py": return bool(arguments and arguments[0] in ("preview", "start", "materialize-wave", "verify-result", "merge-result", "retire-wave"))
+    if script == "scripts/task_state.py": return bool(arguments and arguments[0] in ("list", "show", "create", "ready", "start", "block", "review", "complete", "reopen", "cancel", "sync-docs"))
+    if script == "scripts/quality_gate.py": return bool(arguments and arguments[0] in ("list", "status", "run", "all"))
+    return bool(arguments and arguments[0] in ("list", "show"))
 
 def forbidden_request(event, root):
     tool_name = str(event.get("tool_name", "")); tool_input = event.get("tool_input") or {}
@@ -150,6 +155,7 @@ def forbidden_request(event, root):
             frozen = True
     if re.search(r"(?i)(?:^|[\\/])freeze_core\.py\b", command): return "freeze_core.py is human-controlled and cannot be run by an AI tool call"
     if re.search(r"(?i)project_state\.py\s+confirm-core\b", command): return "core confirmation is human-controlled"
+    if re.search(r"(?i)quality_gate\.py\s+accept-manual\b", command): return "manual quality acceptance is human-controlled"
     cwd = Path(event.get("cwd") or root).expanduser().resolve()
     if protected_script_execution_allowed(root, cwd, command): return None
     if not command_is_mutating(tool_name, tool_input): return None
@@ -161,7 +167,7 @@ def forbidden_request(event, root):
                 core_only = relative.startswith("docs/core/") or relative == ".idea-to-build/core.lock.json"
                 if frozen or not core_only: return "protected path targeted: %s" % relative
     normalized_command = command.replace("\\", "/").lower()
-    always_pattern = r"(?:^|[\s'\"])(?:\.\./)*(?:agents\.md|hooks/|\.codex/hooks/|\.idea-to-build/last_test\.json|scripts/(?:freeze_core|verify_core|idea_to_build_lib|codex_dispatch)\.py)"
+    always_pattern = r"(?:^|[\s'\"])(?:\.\./)*(?:agents\.md|hooks/|\.codex/hooks/|\.idea-to-build/(?:last_test|last_quality)\.json|scripts/(?:freeze_core|verify_core|idea_to_build_lib|codex_dispatch|task_state|quality_gate|memory_prompts|migrate_project|_memory_runtime|idea_to_build_memory_runtime)\.py)"
     core_pattern = r"(?:^|[\s'\"])(?:\.\./)*(?:docs/core|\.idea-to-build/core\.lock\.json)"
     if re.search(always_pattern, normalized_command) or (frozen and re.search(core_pattern, normalized_command)):
         return "a protected path is targeted by a mutating command"

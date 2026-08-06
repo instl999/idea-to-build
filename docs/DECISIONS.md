@@ -76,7 +76,7 @@
 
 ## D-010：Codex-only 支持边界
 
-- 决定：0.3.0 明确不承诺 OpenClaw、通用 SkillHub、Claude Code 或跨宿主兼容。
+- 决定：自 0.3.0 起明确不承诺 OpenClaw、通用 SkillHub、Claude Code 或跨宿主兼容；0.4.0 继续保持该边界。
 - 证据：Plugin 描述、`SKILL.md`、README 的支持边界、`codex-orchestration.md`。
 - 可能原因：明确原因是端到端契约依赖 Codex Plugins、Hooks、原生协作工具和 worktree。
 - 约束：Markdown 可被其他宿主读取不等于可安装或行为兼容。
@@ -88,3 +88,10 @@
 - 证据：`SKILL.md`、`references/mcp-integration.md`、`DESIGN_DOCS` 和对应回归测试。
 - 约束：不新增第 39 项需求、state schema、CLI、依赖或自动安装；核心边界受影响时必须在冻结前由用户审阅。
 - 修改前考虑：若未来机器持久化/强制该决策，需定义 schema 迁移、旧项目默认、CLI/退出码、失败关闭、凭据与宿主兼容测试。
+
+## D-012：四层记忆以规范任务和快照质量为中心，默认顺序开发
+
+- 决定：冻结核心之后建立规则、规格、任务和质量四层记忆；任务 JSON 是状态唯一事实源，质量记录必须绑定当前快照，默认 `guided_sequential`，并行只接受规范 ready 任务。
+- 证据：`load_tasks()`、`transition_task()`、`run_quality_gate()`、`memory_prompt()`、`render_context()`、`generate_handoff()`、Stop 和新增测试。
+- 约束：仓库正文不可信；人工门禁不能由 AI 完成；Markdown 投影可重建但不是跨文件事务；记录和 Hook 不是密码学证明。
+- 兼容：schema 1 加法字段；旧项目继续 last_test 路径，迁移不覆盖并可增加版本化兼容 runtime。

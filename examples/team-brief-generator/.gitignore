@@ -6,3 +6,4 @@ venv/
 !.env.example
 .idea-to-build/guardrail.log
 .idea-to-build/last_test.json
+.idea-to-build/last_quality.json

@@ -1,10 +1,11 @@
 {
   "schema_version": 1,
   "adapter": "codex-subagent-worktree-v1",
-  "created_at": "2026-08-05T15:11:54Z",
+  "created_at": "2026-08-06T07:09:39Z",
   "project_id": "1447978e-81af-4ef0-9f9e-58c0d34d4e92",
   "project_name": "Team Brief Generator",
   "core_hash": "409bf7fe207f8da0d0e50eff1f0c2ff16b1eb70720b89cfdabd2e742281e7b73",
+  "development_mode": "parallel_worktrees",
   "activation_policy": "Start only after core freeze when the user asks Codex to proceed with development.",
   "authorization": {
     "actor": "human",
@@ -14,11 +15,15 @@
     "number": 0,
     "name": "Orchestrator, architecture, and integration",
     "prompt": "codex/prompts/00-orchestrator-architecture-and-integratio.md",
-    "prompt_sha256": "a9be15230b8d281751495f80d8e5d9e9f44dd7d0d15b3dde55c8bd79cf37a0c6",
+    "prompt_sha256": "fbdacaee8026b6926553529ccaacc5f986621df6e927b5597ac473eb82896038",
     "ownership": [
       "plans",
+      ".idea-to-build/tasks.json",
+      ".idea-to-build/quality_gates.json",
       "docs/live/DECISIONS.md",
-      "docs/live/RISKS.md"
+      "docs/live/RISKS.md",
+      "docs/live/TASKS.md",
+      "docs/live/STATUS.md"
     ]
   },
   "orchestration_mode": "SUBAGENTS",
@@ -41,15 +46,22 @@
   "recommended_max_parallel": 3,
   "tasks": [
     {
-      "id": "task-01-input-and-parsing",
+      "id": "task-01-canonical-task-0001",
       "number": 1,
-      "task_name": "task_01_input_and_parsing",
-      "name": "Input and parsing",
-      "goal": "Implement validated note ingestion and deterministic parsing",
-      "prompt": "codex/prompts/01-input-and-parsing.md",
-      "prompt_sha256": "35e0df5a47ac91692f3b4f22772c02fb1d95bfe95ecc13a925dd5afbfaf93863",
-      "branch": "codex/01-input-and-parsing",
-      "worktree": "../team-brief-generator-01-input-and-parsing",
+      "task_name": "task_01_canonical_task_0001",
+      "canonical_task_id": "TASK-0001",
+      "spec_path": "specs/TASK-0001/SPEC.md",
+      "plan_path": "specs/TASK-0001/PLAN.md",
+      "required_quality_gates": [
+        "verify-core",
+        "user-acceptance"
+      ],
+      "name": "Canonical TASK-0001",
+      "goal": "Implement TASK-0001 under specs/TASK-0001/SPEC.md",
+      "prompt": "codex/prompts/01-canonical-task-0001.md",
+      "prompt_sha256": "49cfb1f553e7eae93079d856b06c0223cc0b11ae478cf99f22af67625bdbeb39",
+      "branch": "codex/01-task-0001",
+      "worktree": "../team-brief-generator-01-task-0001",
       "ownership": [
         "src/intake",
         "src/shared",
@@ -59,150 +71,110 @@
       ],
       "dependencies": [],
       "tests": [
-        "npm test -- intake"
+        "npm test"
       ],
       "merge_order": 1
     },
     {
-      "id": "task-02-brief-generation",
+      "id": "task-02-canonical-task-0002",
       "number": 2,
-      "task_name": "task_02_brief_generation",
-      "name": "Brief generation",
-      "goal": "Build traceable brief generation and editing state",
-      "prompt": "codex/prompts/02-brief-generation.md",
-      "prompt_sha256": "7003412a0ca28c5d2ad38e783f0d349a0771d70e97de97acd995a04e6259b856",
-      "branch": "codex/02-brief-generation",
-      "worktree": "../team-brief-generator-02-brief-generation",
+      "task_name": "task_02_canonical_task_0002",
+      "canonical_task_id": "TASK-0002",
+      "spec_path": "specs/TASK-0002/SPEC.md",
+      "plan_path": "specs/TASK-0002/PLAN.md",
+      "required_quality_gates": [
+        "verify-core",
+        "user-acceptance"
+      ],
+      "name": "Canonical TASK-0002",
+      "goal": "Implement TASK-0002 under specs/TASK-0002/SPEC.md",
+      "prompt": "codex/prompts/02-canonical-task-0002.md",
+      "prompt_sha256": "479bb6179356feb044b3d3d19a6c0245506c8455e3d92732eb3a8df632d14605",
+      "branch": "codex/02-task-0002",
+      "worktree": "../team-brief-generator-02-task-0002",
       "ownership": [
         "src/generation"
       ],
       "dependencies": [
-        "task-01-input-and-parsing"
+        "task-01-canonical-task-0001"
       ],
       "tests": [
-        "npm test -- generation"
+        "npm test"
       ],
       "merge_order": 2
     },
     {
-      "id": "task-03-export-and-persistence",
+      "id": "task-03-canonical-task-0003",
       "number": 3,
-      "task_name": "task_03_export_and_persistence",
-      "name": "Export and persistence",
-      "goal": "Implement local persistence, deletion, and Markdown export",
-      "prompt": "codex/prompts/03-export-and-persistence.md",
-      "prompt_sha256": "74592dc2d211aa17ed758232b532b5e28fe00f8c8d15a8134a23898256745a84",
-      "branch": "codex/03-export-and-persistence",
-      "worktree": "../team-brief-generator-03-export-and-persistence",
+      "task_name": "task_03_canonical_task_0003",
+      "canonical_task_id": "TASK-0003",
+      "spec_path": "specs/TASK-0003/SPEC.md",
+      "plan_path": "specs/TASK-0003/PLAN.md",
+      "required_quality_gates": [
+        "verify-core",
+        "user-acceptance"
+      ],
+      "name": "Canonical TASK-0003",
+      "goal": "Implement TASK-0003 under specs/TASK-0003/SPEC.md",
+      "prompt": "codex/prompts/03-canonical-task-0003.md",
+      "prompt_sha256": "7ee5b4848af3f5dc2369f34579ca71d61c6cff5826d6a08134e59e960c45f179",
+      "branch": "codex/03-task-0003",
+      "worktree": "../team-brief-generator-03-task-0003",
       "ownership": [
         "src/export"
       ],
       "dependencies": [
-        "task-01-input-and-parsing"
+        "task-01-canonical-task-0001"
       ],
       "tests": [
-        "npm test -- export"
+        "npm test"
       ],
       "merge_order": 3
     },
     {
-      "id": "task-04-review-interface",
+      "id": "task-04-canonical-task-0004",
       "number": 4,
-      "task_name": "task_04_review_interface",
-      "name": "Review interface",
-      "goal": "Build the accessible review workflow",
-      "prompt": "codex/prompts/04-review-interface.md",
-      "prompt_sha256": "0d08c95e0019a0e2229aed6aae57112121e6e329b2206cfe91b0ddbc0b83163a",
-      "branch": "codex/04-review-interface",
-      "worktree": "../team-brief-generator-04-review-interface",
+      "task_name": "task_04_canonical_task_0004",
+      "canonical_task_id": "TASK-0004",
+      "spec_path": "specs/TASK-0004/SPEC.md",
+      "plan_path": "specs/TASK-0004/PLAN.md",
+      "required_quality_gates": [
+        "verify-core",
+        "user-acceptance"
+      ],
+      "name": "Canonical TASK-0004",
+      "goal": "Implement TASK-0004 under specs/TASK-0004/SPEC.md",
+      "prompt": "codex/prompts/04-canonical-task-0004.md",
+      "prompt_sha256": "99d78d539602299a3c4a21788910c78255b9055985d6e81d812c911f18d927b9",
+      "branch": "codex/04-task-0004",
+      "worktree": "../team-brief-generator-04-task-0004",
       "ownership": [
         "ui"
       ],
       "dependencies": [
-        "task-01-input-and-parsing"
+        "task-01-canonical-task-0001"
       ],
       "tests": [
-        "npm test -- ui"
+        "npm test"
       ],
       "merge_order": 4
-    },
-    {
-      "id": "task-05-quality-engineering",
-      "number": 5,
-      "task_name": "task_05_quality_engineering",
-      "name": "Quality engineering",
-      "goal": "Report test, integration, security, performance, regression, and core-consistency findings",
-      "prompt": "codex/prompts/05-quality-engineering.md",
-      "prompt_sha256": "714d811489c534a62706a7639ba726abfad91d086e78247112df8bf643a960fc",
-      "branch": "codex/05-quality-engineering",
-      "worktree": "../team-brief-generator-05-quality-engineering",
-      "ownership": [
-        "tests",
-        "quality"
-      ],
-      "dependencies": [
-        "task-01-input-and-parsing",
-        "task-02-brief-generation",
-        "task-03-export-and-persistence",
-        "task-04-review-interface"
-      ],
-      "tests": [
-        "npm test",
-        "python scripts/verify_core.py --path ."
-      ],
-      "merge_order": 5
-    },
-    {
-      "id": "task-06-release-and-operations",
-      "number": 6,
-      "task_name": "task_06_release_and_operations",
-      "name": "Release and operations",
-      "goal": "Complete release checks, documentation, migration, deployment, rollback, and release records",
-      "prompt": "codex/prompts/06-release-and-operations.md",
-      "prompt_sha256": "19ea0489f8fdfa7e37eae24c14e46b544b69415e9c8334a5146a33fefce689cb",
-      "branch": "codex/06-release-and-operations",
-      "worktree": "../team-brief-generator-06-release-and-operations",
-      "ownership": [
-        "docs/live/STATUS.md",
-        "docs/live/RELEASES.md",
-        "deploy"
-      ],
-      "dependencies": [
-        "task-05-quality-engineering"
-      ],
-      "tests": [
-        "python scripts/verify_core.py --path ."
-      ],
-      "merge_order": 6
     }
   ],
   "waves": [
     {
       "number": 1,
       "task_ids": [
-        "task-01-input-and-parsing"
+        "task-01-canonical-task-0001"
       ]
     },
     {
       "number": 2,
       "task_ids": [
-        "task-02-brief-generation",
-        "task-03-export-and-persistence",
-        "task-04-review-interface"
-      ]
-    },
-    {
-      "number": 3,
-      "task_ids": [
-        "task-05-quality-engineering"
-      ]
-    },
-    {
-      "number": 4,
-      "task_ids": [
-        "task-06-release-and-operations"
+        "task-02-canonical-task-0002",
+        "task-03-canonical-task-0003",
+        "task-04-canonical-task-0004"
       ]
     }
   ],
-  "manifest_sha256": "28a8359dee9b5ae9e91c24179988278b9926b340e069b8f5cd986969112b9e03"
+  "manifest_sha256": "9b0f4008182d76dc53e173c86af3f11a714e615f4cdeb3d8b07398b9690c91d7"
 }

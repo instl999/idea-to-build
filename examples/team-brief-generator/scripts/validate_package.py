@@ -7,7 +7,8 @@ from idea_to_build_lib import IdeaToBuildError, load_json, validate_project_pack
 PLUGIN_SCRIPT_NAMES = (
     "codex_dispatch.py", "freeze_core.py", "generate_handoff.py", "idea_to_build_lib.py",
     "init_project.py", "project_state.py", "render_context.py", "requirements_check.py",
-    "research_report.py", "validate_package.py", "verify_core.py",
+    "research_report.py", "validate_package.py", "verify_core.py", "task_state.py",
+    "quality_gate.py", "memory_prompts.py", "migrate_project.py", "_memory_runtime.py",
 )
 PLUGIN_REQUIRED = (
     ".codex-plugin/plugin.json", ".agents/plugins/marketplace.json",
@@ -26,7 +27,10 @@ PLUGIN_REQUIRED = (
     "docs/INDEX.md", "docs/PROJECT_OVERVIEW.md", "docs/DOMAIN_MODEL.md", "docs/DATA_MODEL.md",
     "docs/API_AND_INTEGRATIONS.md", "docs/DEVELOPMENT_GUIDE.md", "docs/TESTING_AND_QUALITY.md",
     "docs/DEPLOYMENT_AND_OPERATIONS.md", "docs/KNOWN_ISSUES_AND_TECH_DEBT.md",
-    "docs/OPEN_QUESTIONS.md", "docs/DECISIONS.md",
+    "docs/OPEN_QUESTIONS.md", "docs/DECISIONS.md", "skills/idea-to-build/references/repository-memory.md",
+    "skills/idea-to-build/assets/project-template/.idea-to-build/tasks.json", "skills/idea-to-build/assets/project-template/.idea-to-build/quality_gates.json",
+    "skills/idea-to-build/assets/project-template/docs/live/MEMORY_MAP.md", "skills/idea-to-build/assets/project-template/docs/live/WORKING_RULES.md",
+    "skills/idea-to-build/assets/project-template/specs/TASK-0001-example/SPEC.md", "skills/idea-to-build/assets/project-template/codex/PROMPT_CATALOG.md",
 ) + tuple("skills/idea-to-build/scripts/" + item for item in PLUGIN_SCRIPT_NAMES)
 
 def _version_contract_errors(manifest, pyproject_text):

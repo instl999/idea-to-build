@@ -1,5 +1,7 @@
 # Codex orchestration and dispatch adapter
 
+Default to `guided_sequential`: one canonical task, one SPEC/PLAN, one branch, and one Codex conversation. Select `parallel_worktrees` only when the project state explicitly requests it and independent ready tasks have concrete acceptance, required gates, and non-overlapping owned paths.
+
 Build the dependency graph before allocating agents. The root Codex agent is Thread 0 and owns orchestration, architecture, integration, shared files, conflict handling, and final verification. Every file-changing child runs as a subagent in its own Git worktree.
 
 ## Codex activation gate

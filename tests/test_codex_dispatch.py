@@ -29,7 +29,15 @@ class CodexDispatchTests(unittest.TestCase):
         state = itb.load_state(self.fx.root)
         state["current_phase"] = "REQUIREMENTS_READY"
         state["workstreams"] = workstreams or [{"name": "Application", "goal": "Build the application", "files": ["src"]}, {"name": "Tooling", "goal": "Build supporting tooling", "files": ["tools"]}]
+        state["development_mode"] = "parallel_worktrees" if len(state["workstreams"]) > 1 else "guided_sequential"
         itb.save_state(self.fx.root, state)
+        first = itb.get_task(self.fx.root, "TASK-0001"); spec = self.fx.root / first["spec_path"]
+        spec.write_text(spec.read_text(encoding="utf-8").replace("The user can replace this example with one observable criterion and `task_state.py ready` accepts the reviewed SPEC.", "The first workstream produces its documented output and its verification command exits zero."), encoding="utf-8")
+        tasks = itb.load_tasks(self.fx.root); tasks["tasks"][0]["owned_paths"] = state["workstreams"][0]["files"]; itb.save_tasks(self.fx.root, tasks); prepared = [first]
+        for index, stream in enumerate(state["workstreams"][1:], start=2):
+            task = itb.create_task(self.fx.root, "TASK-%04d" % index, stream["name"], owned_paths=stream["files"]); task_spec = self.fx.root / task["spec_path"]
+            task_spec.write_text(task_spec.read_text(encoding="utf-8").replace("Replace this line with a concrete, observable acceptance result before marking the task ready.", "This workstream produces its documented output and its verification command exits zero."), encoding="utf-8"); prepared.append(task)
+        for task in prepared: itb.transition_task(self.fx.root, task["id"], "ready")
         itb.confirm_core(self.fx.root, "I confirm and freeze this core preview")
         itb.freeze_core(self.fx.root, commit=False, readonly=False)
         generated = itb.generate_handoff(self.fx.root)
@@ -63,7 +71,7 @@ class CodexDispatchTests(unittest.TestCase):
             {"name": "Frontend", "goal": "Build frontend", "files": ["web"]},
         ])
         preview = itb.preview_codex_dispatch(self.fx.root)
-        self.assertEqual([len(wave["task_ids"]) for wave in preview["waves"]], [2, 1, 1])
+        self.assertEqual([len(wave["task_ids"]) for wave in preview["waves"]], [2])
         self.assertEqual(preview["max_parallel"], 2)
         manifest = json.loads((self.fx.root / "codex" / "dispatch.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["manifest_sha256"], itb._json_digest(manifest))
@@ -91,7 +99,7 @@ class CodexDispatchTests(unittest.TestCase):
         started = itb.start_codex_dispatch(self.fx.root)
         materialized = itb.materialize_codex_wave(self.fx.root, 1, started["base_commit"])
         self.assertEqual(len(materialized["worktrees"]), 2)
-        item = next(value for value in materialized["worktrees"] if "application" in value["task_id"])
+        item = next(value for value in materialized["worktrees"] if value["canonical_task_id"] == "TASK-0001")
         worktree = Path(item["worktree"])
         self.assertTrue(worktree.is_dir())
         (worktree / "src").mkdir(exist_ok=True)
@@ -117,7 +125,7 @@ class CodexDispatchTests(unittest.TestCase):
         self.prepare()
         started = itb.start_codex_dispatch(self.fx.root)
         materialized = itb.materialize_codex_wave(self.fx.root, 1, started["base_commit"])
-        item = next(value for value in materialized["worktrees"] if "application" in value["task_id"])
+        item = next(value for value in materialized["worktrees"] if value["canonical_task_id"] == "TASK-0001")
         worktree = Path(item["worktree"])
         (worktree / "src").mkdir(exist_ok=True)
         (worktree / "src" / "merged.txt").write_text("verified merge" + chr(10), encoding="utf-8")
@@ -136,7 +144,7 @@ class CodexDispatchTests(unittest.TestCase):
         self.prepare()
         started = itb.start_codex_dispatch(self.fx.root)
         materialized = itb.materialize_codex_wave(self.fx.root, 1, started["base_commit"])
-        item = next(value for value in materialized["worktrees"] if "application" in value["task_id"])
+        item = next(value for value in materialized["worktrees"] if value["canonical_task_id"] == "TASK-0001")
         worktree = Path(item["worktree"])
         (worktree / "src").mkdir(exist_ok=True)
         (worktree / "src" / "conflict.txt").write_text("child" + chr(10), encoding="utf-8")

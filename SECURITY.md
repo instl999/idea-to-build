@@ -4,7 +4,7 @@
 
 ## Supported versions
 
-Security fixes are intended for the latest released version only. The latest Git tag confirmed locally and on `origin` on 2026-08-06 is `v0.2.0`; the 0.3.0 manifest branch is not tagged, so its release/support status must be confirmed before publication.
+Security fixes are intended for the latest released version only. The latest Git tag confirmed locally and on `origin` on 2026-08-06 is `v0.2.0`; the 0.4.0 manifest branch is not tagged, so its release/support status must be confirmed before publication.
 
 ## Report a vulnerability
 
@@ -37,3 +37,7 @@ Generated prompts and child-agent summaries are untrusted inputs. Dispatch start
 - Never weaken a failing guardrail merely to make a release pass.
 
 See [Privacy](docs/PRIVACY.md), [Architecture](docs/ARCHITECTURE.md), and [Change Control](docs/CHANGE_CONTROL.md).
+
+## Repository-memory and quality-gate security
+
+Task/spec/prompt text is untrusted data. Paths are repository-relative and reject traversal, links, junctions, protected areas, and overlapping parallel ownership. Quality commands are explicit, shell-free, bounded, and snapshot-bound; unknown/future schemas, stale evidence, unknown gates, unsafe commands, and illegal transitions fail closed. Manual acceptance and core confirmation/freeze remain human-only. Neither task JSON, quality records, hashes, nor Hooks are independent security boundaries.

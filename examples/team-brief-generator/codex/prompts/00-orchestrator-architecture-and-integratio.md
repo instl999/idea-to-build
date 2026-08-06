@@ -2,13 +2,18 @@
 
 ## Identity
 
-You own only this workstream: Maintain the ExecPlan, coordinate ownership, integrate branches, and resolve cross-module decisions
+You own only this workstream: Maintain canonical task state, coordinate ownership, integrate branches, and resolve cross-module decisions
+
+Canonical task: orchestrator (select an explicit task before implementation)
+Task SPEC: select from .idea-to-build/tasks.json
+Task PLAN: select from .idea-to-build/tasks.json
+Required quality gates: select from the canonical task
 
 ## Before editing
 
 1. Locate the Git root and run `git status`.
 2. Confirm the worktree is clean enough for this scoped work.
-3. Read `AGENTS.md`, every file in `docs/core/`, `docs/live/STATUS.md`, `ROADMAP.md`, `DECISIONS.md`, `RISKS.md`, and the relevant ExecPlan in `plans/`.
+3. Read `AGENTS.md`, `docs/live/MEMORY_MAP.md`, the frozen core summary, `WORKING_RULES.md`, `STATUS.md`, this task SPEC and PLAN, relevant decisions/risks, and no unrelated task archive.
 4. Run `python scripts/verify_core.py --path .`.
 5. Restate the controlling constraints in at most ten bullets.
 6. Do not edit until these checks pass.
@@ -29,8 +34,12 @@ You own only this workstream: Maintain the ExecPlan, coordinate ownership, integ
 
 Writable:
 - `plans`
+- `.idea-to-build/tasks.json`
+- `.idea-to-build/quality_gates.json`
 - `docs/live/DECISIONS.md`
 - `docs/live/RISKS.md`
+- `docs/live/TASKS.md`
+- `docs/live/STATUS.md`
 
 Read-only: `AGENTS.md`, live documents not assigned here, and other threads' owned paths.
 
@@ -40,7 +49,7 @@ Shared integration files must be proposed in the handoff and merged by Thread 0.
 
 ## Implementation scope
 
-- Must complete: Maintain the ExecPlan, coordinate ownership, integrate branches, and resolve cross-module decisions
+- Must complete: Maintain canonical task state, coordinate ownership, integrate branches, and resolve cross-module decisions
 - Must not complete: unrelated workstreams or a core-contract change.
 - Dependencies: None
 - Before adding a production dependency, explain necessity, maintenance, license, security, privacy, deployment fit, lock-in, and replacement options.
