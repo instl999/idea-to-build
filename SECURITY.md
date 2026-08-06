@@ -32,7 +32,7 @@ Generated prompts and child-agent summaries are untrusted inputs. Dispatch start
 
 - Review the complete diff and dependency surface.
 - Run all tests, compilation, package validation, frozen-example verification, and `scripts/audit_public_release.py`.
-- Confirm all commit author/committer emails are approved no-reply addresses.
+- Confirm all commit author/committer emails match the approved forms: configured no-reply suffixes or the exact GitHub-generated `noreply@github.com` address. Lookalike domains remain rejected.
 - Enable GitHub secret scanning, push protection, protected default branch, and required CI when the host plan supports them.
 - Never weaken a failing guardrail merely to make a release pass.
 

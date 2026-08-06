@@ -58,3 +58,13 @@
 - 文档与副本：同步英文/中文架构和仓库记忆说明、数据模型、项目状态、公开 changelog 与技术债务；权威 runtime 同步到冻结示例副本，冻结核心和锁文件不变。
 - 回归覆盖：新增无效保存不改写任何投影、无效创建不产生 SPEC、`planned_tasks` 同步、非法阻塞无部分修改、合法阻塞更新当前任务五类测试。
 - 验证结果：117 项 `unittest` 中 116 通过、1 项因 Windows 目录符号链接能力跳过；`compileall`、包校验、冻结示例校验、公开发布脱敏审计、Plugin validator 和设置 `PYTHONUTF8=1` 的 Skill validator 均通过。
+
+## 2026-08-06 — 修复 PR 1 的 GitHub 合成提交审计误报
+
+- 任务目标：使用 `gh` 检查 PR 1 的六个跨平台失败作业，依据 Actions 日志做最小安全修复并推送到原分支。
+- 远端证据：`gh pr checks` 与 run `31083482443` 显示六个 `pull_request` 作业都在“Audit publishable content and history”失败，其他测试、编译、包和冻结校验通过；同一 head SHA `952cfdb` 的 push run `31083352330` 六项全绿。GitHub API 确认 PR merge commit `1e11dc44` 的 committer 是 GitHub，邮箱为 `noreply@github.com`。
+- 根因与威胁：历史审计只允许 `@users.noreply.github.com` 和测试后缀，误拒绝 GitHub 合成 merge commit。不能用跳过 PR 历史审计或宽泛域名匹配修复，否则个人邮箱或相似域名可能绕过脱敏门禁。
+- 最小修复：复用工作树中已有的针对性补丁，仅允许精确 `noreply@github.com`，并统一内容/历史邮箱判断；保留个人邮箱、非官方子域和后缀拼接相似域名的拒绝行为。同步中英文安全说明与测试/项目状态；没有改 CLI、schema、退出码、冻结核心或发布审计的其他模式。
+- 回归与恢复：新增官方/测试 no-reply 成功路径和个人/相似域名失败路径；拒绝样例在源码中分段拼接，运行时仍验证完整地址，避免测试夹具本身触发发布内容审计。若 GitHub 行为变化可回退该提交，完整审计仍会失败关闭。
+- 当前混合工作树验证：123 项 `unittest` 中 122 通过、1 项因 Windows 目录符号链接能力跳过；`compileall`、包校验和冻结示例校验通过。其余未提交改动继续保留，不纳入本次 CI 修复提交。
+- 隔离提交验证：在仅含 PR 基线与本次修复的临时 clone 中运行 119 项 `unittest`，118 通过、1 项环境性跳过；完整五项仓库门禁全部通过。另获取实际 `refs/pull/1/merge`，不带 `--worktree-only` 的完整历史审计也通过。

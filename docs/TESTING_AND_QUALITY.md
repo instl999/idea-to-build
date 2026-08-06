@@ -20,15 +20,16 @@
 | 集成 | `test_codex_dispatch.py` | manifest、波次、脏树门禁、启动提交、真实 worktree、结果验证、合并与冲突恢复 |
 | 端到端 | `test_end_to_end.py` | 初始化 → readiness → 冻结 → 文档/handoff → 包校验 |
 | 安全/包 | `test_initialization_safety.py`、`test_package_validation.py`、`test_activation_cases.py` | 预检、链接路径、完整运行时与 .gitignore 复制、清单/版本/必需文件、MCP 阶段顺序/缺失协议反例、激活正反例 |
+| 安全/发布 | `test_release_audit.py` | 官方/测试 no-reply 地址允许，以及个人邮箱和相似域名拒绝 |
 
-本次交叉验证共发现 91 个测试：90 个通过，1 个 Windows 目录 symlink 场景因系统能力跳过。若测试数量发生变化，必须更新本段和 `PROJECT_STATUS.md`。
+PR 基线加入发布审计回归后的隔离验证共发现 119 个测试：118 个通过，1 个 Windows 目录 symlink 场景因系统能力跳过。若测试数量发生变化，必须更新本段和 `PROJECT_STATUS.md`。
 
 ## 静态和包级检查
 
 - `compileall`：确认 Python 源可编译，不是完整 lint 或类型检查。
 - `validate_package.py`：检查 marketplace、Hook helper、完整 Skill CLI、项目记忆文档、插件名/Skill 目录、版本一致性、frontmatter/agent 配置、Hook 事件、现存 Python AST、常见私有路径和疑似 secret；它仍是显式清单与启发式扫描，不能替代宿主安装 smoke test。
 - `verify_core.py`：验证冻结示例五份核心文件和聚合 SHA-256。
-- `audit_public_release.py`：检查当前 tracked 文本/符号链接/常见私有路径与凭证模式；非 `--worktree-only` 模式另查所有 refs 的 author/committer 邮箱。它不扫描未跟踪文件或历史 blob 内容。
+- `audit_public_release.py`：检查当前 tracked 文本/符号链接/常见私有路径与凭证模式；非 `--worktree-only` 模式另查所有 refs 的 author/committer 邮箱，只允许配置的 no-reply 后缀、测试域名和精确的 GitHub `noreply@github.com`。它不扫描未跟踪文件或历史 blob 内容。
 
 当前没有配置 formatter、lint、静态 type checker、覆盖率采集/阈值、性能基准、依赖漏洞扫描或 SAST。
 

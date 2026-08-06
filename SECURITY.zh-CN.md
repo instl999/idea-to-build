@@ -32,7 +32,7 @@ MCP 候选、安装说明、工具描述、资源和 server 输出都属于不�
 
 - 审查完整 diff 和依赖面。
 - 运行全部测试、编译、包校验、冻结示例校验和 `scripts/audit_public_release.py`。
-- 确认所有 commit 作者/提交者邮箱都是获准的 no-reply 地址。
+- 确认所有 commit 作者/提交者邮箱只匹配获准形式：配置的 no-reply 后缀，或 GitHub 合成提交使用的精确 `noreply@github.com` 地址；相似域名仍拒绝。
 - 宿主套餐支持时启用 GitHub secret scanning、push protection、默认分支保护和必需 CI。
 - 不得为了发布通过而削弱失败的保护规则。
 
