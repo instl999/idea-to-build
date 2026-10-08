@@ -1,5 +1,13 @@
 # Idea-to-Build Codex Plugin
 
+<!-- repository-catalog:start -->
+**Category: AI development and agent tools** · [Repositories in this category](https://github.com/instl999?tab=repositories&q=topic%3Aagent-development)
+
+A Codex plugin that develops product ideas through research, requirements approval, core-contract freezing and task validation.
+
+[简体中文](README.zh-CN.md)
+<!-- repository-catalog:end -->
+
 **English** | [简体中文](README.zh-CN.md)
 
 Idea-to-Build is a Codex Desktop/CLI Plugin that turns a digital-product idea into a researched, human-approved, frozen, and testable development project. It combines one Skill, five lifecycle Hooks, Python 3.9+ standard-library CLIs, and Git. It has no MCP server, database, third-party Python runtime dependency, or Plugin-operated network service.
